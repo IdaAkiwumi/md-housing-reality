@@ -109,8 +109,7 @@ def build_email(payload):
         f"[See the full data for every county]({SITE_URL})",
         "",
         f"Data retrieved: {fetched_at}",
-        "",
-        "Ida",
+        
     ]
 
     return subject, "\n".join(lines)
@@ -137,7 +136,7 @@ def send_email(subject, body):
     try:
         with urlopen(req, timeout=30) as r:
             response = json.loads(r.read().decode("utf-8"))
-            print(f"Rent Watch sent. Email ID: {response.get('id', 'unknown')}")
+            print(f"Rent Watch sent. Email ID: {response.get('id', 'unknown')} - send_newsletter.py:139")
     except HTTPError as exc:
         print(
             f"Buttondown API error: {exc.code} {exc.read().decode('utf-8', 'replace')}",
@@ -145,7 +144,7 @@ def send_email(subject, body):
         )
         sys.exit(1)
     except URLError as exc:
-        print(f"Network error: {exc}", file=sys.stderr)
+        print(f"Network error: {exc} - send_newsletter.py:147", file=sys.stderr)
         sys.exit(1)
 
 
