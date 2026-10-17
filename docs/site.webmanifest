@@ -1,0 +1,22 @@
+{
+  "name": "Maryland Housing Burden",
+  "short_name": "MD Burden",
+  "description": "Rent, income, and renter burden for every Maryland county.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#eeeff1",
+  "theme_color": "#fbbf24",
+  "icons": [
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://IdaAkiwumi.github.io/md-housing-reality/sitemap.xml
