@@ -34,11 +34,6 @@ def dollars(value):
 
 
 def pick_finding(rows):
-    """
-    Choose the most interesting findings this month:
-    - The county with the highest renter burden
-    - The county where Census median rent lags Zillow asking rent the most
-    """
     burdened = [r for r in rows if r.get("burden_percent") is not None]
     burdened.sort(key=lambda r: r["burden_percent"], reverse=True)
     top_burden = burdened[0] if burdened else None
@@ -117,10 +112,14 @@ def send_email(subject, body):
     headers = {
         "Authorization": f"Token {BUTTONDOWN_API_KEY}",
         "Content-Type": "application/json",
+        # Buttondown requires this header once per API key before it will
+        # send to your full list. The name is intentionally alarming.
+        "X-Buttondown-Live-Dangerously": "true",
     }
     payload = {
         "subject": subject,
         "body": body,
+        # Use "draft" for testing, "about_to_send" for live monthly sends.
         "status": "about_to_send",
     }
     req = Request(
