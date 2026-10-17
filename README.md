@@ -139,15 +139,7 @@ md-housing-reality/
 
 ---
 
-### 🗺️ Roadmap
 
-- [ ] Add county apartment listing counts from a public source
-- [ ] Per county share images for social previews
-- [ ] Historical ZORI trend line to complement the Census windows
-- [ ] Spanish language version of the interface and method notes
-- [ ] Interactive map view of all 24 jurisdictions
-
----
 
 ### 💡 For Hiring Managers
 
