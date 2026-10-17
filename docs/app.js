@@ -571,14 +571,8 @@ function validateData(payload) {
 /* ---------- Share menu ---------- */
 function currentShareUrl() {
   const url = new URL(window.location.href);
-  const county = $("county") && $("county").value;
-  if (county) {
-    url.search = "";
-    url.searchParams.set("county", county);
-    url.hash = "";
-  } else {
-    url.hash = "";
-  }
+  url.search = "";
+  url.hash = "";
   return url.toString();
 }
 
