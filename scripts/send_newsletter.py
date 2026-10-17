@@ -49,7 +49,13 @@ def pick_finding(rows):
     return top_burden, biggest_gap
 
 
-def build_email(rows):
+def build_email(payload):
+    rows = payload["rows"]
+    fetched_at = (
+        payload.get("metadata", {}).get("fetched_at")
+        or datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+
     latest_year = max(r["year"] for r in rows)
     latest = [r for r in rows if r["year"] == latest_year]
 
@@ -91,15 +97,19 @@ def build_email(rows):
             f"## Where Census data lags reality most: {county['name']}",
             "",
             f"The Census reports median rent at **{census}**, but Zillow's "
-            f"current asking-rent index is **{market}** — a gap of "
+            f"current asking-rent index is **{market}**, a gap of "
             f"**{pct:.0f}%**.",
             "",
         ]
 
+    # The fetched_at timestamp makes every email body unique so Buttondown
+    # does not reject repeat runs as duplicates within the same month.
     lines += [
         "---",
         "",
         f"See the full data for every county: {SITE_URL}",
+        "",
+        f"Data retrieved: {fetched_at}",
         "",
         "— Ida",
     ]
@@ -146,7 +156,7 @@ def send_email(subject, body):
 def main():
     with open(DATA_JSON, encoding="utf-8") as fh:
         payload = json.load(fh)
-    subject, body = build_email(payload["rows"])
+    subject, body = build_email(payload)
     send_email(subject, body)
 
 
