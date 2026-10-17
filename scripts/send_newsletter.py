@@ -18,7 +18,7 @@ BUTTONDOWN_API_KEY = os.environ.get("BUTTONDOWN_API_KEY", "").strip()
 if not BUTTONDOWN_API_KEY:
     print(
         "BUTTONDOWN_API_KEY is not set. Add it as a repository secret at "
-        "Settings → Secrets and variables → Actions.",
+        "Settings, Secrets and variables, Actions.",
         file=sys.stderr,
     )
     sys.exit(1)
@@ -29,7 +29,7 @@ SITE_URL = "https://IdaAkiwumi.github.io/md-housing-reality/"
 
 def dollars(value):
     if value is None:
-        return "—"
+        return "$0"
     return f"${value:,.0f}"
 
 
@@ -62,11 +62,12 @@ def build_email(payload):
     top_burden, biggest_gap = pick_finding(latest)
 
     month = datetime.now(timezone.utc).strftime("%B %Y")
-    subject = f"Rent Watch — {month}"
+    # Colon instead of em dash per your writing style.
+    subject = f"Rent Watch: {month}"
 
+    # No leading H1 here. Buttondown renders the subject as the top heading
+    # automatically, so starting with an H1 in the body produces a duplicate.
     lines = [
-        f"# Rent Watch — {month}",
-        "",
         "One finding from this month's Maryland housing data.",
         "",
         "---",
@@ -102,16 +103,14 @@ def build_email(payload):
             "",
         ]
 
-    # The fetched_at timestamp makes every email body unique so Buttondown
-    # does not reject repeat runs as duplicates within the same month.
     lines += [
         "---",
         "",
-        f"See the full data for every county: {SITE_URL}",
+        f"[See the full data for every county]({SITE_URL})",
         "",
         f"Data retrieved: {fetched_at}",
         "",
-        "— Ida",
+        "Ida",
     ]
 
     return subject, "\n".join(lines)
@@ -122,14 +121,11 @@ def send_email(subject, body):
     headers = {
         "Authorization": f"Token {BUTTONDOWN_API_KEY}",
         "Content-Type": "application/json",
-        # Buttondown requires this header once per API key before it will
-        # send to your full list. The name is intentionally alarming.
         "X-Buttondown-Live-Dangerously": "true",
     }
     payload = {
         "subject": subject,
         "body": body,
-        # Use "draft" for testing, "about_to_send" for live monthly sends.
         "status": "about_to_send",
     }
     req = Request(
