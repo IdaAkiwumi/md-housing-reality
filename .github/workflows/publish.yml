@@ -2,7 +2,7 @@ name: Publish Maryland Housing Reality
 
 on:
   push:
-    branches: [main]
+    branches: [main, master]
   schedule:
     # 15th of each month at 08:23 UTC
     - cron: "23 8 15 * *"
