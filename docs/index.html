@@ -12,7 +12,7 @@
   >
   <meta name="keywords" content="Maryland rent, Maryland housing burden, rent by county, rent to income ratio, Maryland housing affordability, Baltimore rent, Census ACS, rent burden, Zillow rent">
 
-  <link rel="canonical" href="https://IdaAkiwumi.github.io/md-housing-reality/">
+  <link rel="canonical" href="https://idaakiwumi.github.io/md-housing-reality/">
 
   <link rel="icon" href="favicon.ico" sizes="any">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -24,7 +24,7 @@
   <meta property="og:site_name" content="Maryland Housing Burden">
   <meta property="og:title" content="Maryland Housing Burden — Rent, Income, and Renter Burden by County">
   <meta property="og:description" content="What rent actually costs. What income you'd need. How you compare. Every Maryland county, monthly.">
-  <meta property="og:url" content="https://IdaAkiwumi.github.io/md-housing-reality/">
+  <meta property="og:url" content="https://idaakiwumi.github.io/md-housing-reality/">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Maryland Housing Burden">
   <meta name="twitter:description" content="Rent, income, and renter burden for every Maryland county.">
@@ -44,7 +44,7 @@
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "Maryland Housing Burden",
-    "url": "https://IdaAkiwumi.github.io/md-housing-reality/",
+    "url": "https://idaakiwumi.github.io/md-housing-reality/",
     "inLanguage": "en-US",
     "author": {
       "@type": "Person",
@@ -66,7 +66,7 @@
     "license": "https://opensource.org/license/mit/",
     "distribution": {
       "@type": "DataDownload",
-      "contentUrl": "https://IdaAkiwumi.github.io/md-housing-reality/counties.csv",
+      "contentUrl": "https://idaakiwumi.github.io/md-housing-reality/counties.csv",
       "encodingFormat": "text/csv"
     }
   }
@@ -161,13 +161,20 @@
       </div>
     </header>
 
-    <p class="notice">
-      Historical Census estimates only — not live listings. Current
-      market rent is a separate Zillow estimate. Calculators are
-      hypothetical, not financial or legal advice.
-    </p>
-
     <section class="hits" aria-label="Key figures for the selected county">
+      <div class="info-wrap">
+        <button
+          type="button"
+          class="info-icon"
+          aria-describedby="infoTip"
+        ><span aria-hidden="true">i</span></button>
+        <span class="info-tip" id="infoTip" role="tooltip">
+          Historical Census estimates only, not live listings. Current
+          market rent is a separate Zillow estimate. Calculators are
+          hypothetical, not financial or legal advice.
+        </span>
+      </div>
+
       <div class="hits-header">
         <span class="eyebrow">Selected county</span>
         <b id="hitsCountyName">—</b>
@@ -648,29 +655,35 @@
         <h2 id="aboutHeading">Why this exists</h2>
 
         <p>
-          I'm Ida Akiwumi, a UX designer. I built Maryland Housing Burden
-          while looking for work after being laid off last summer. Between
-          applications I kept coming back to a question with no good
-          answer: where do you actually see how much rent is burdening
-          people in this state?
+          I'm Ida Akiwumi, a UX designer. After being laid off last
+          summer, I started thinking about how I could use my UX and
+          data skills to build something useful beyond my next job.
         </p>
 
         <p>
-          Maryland publishes the data — but it's buried across five
-          Census tables and three rolling five-year survey windows.
-          Nothing on one page. Nothing that says <b>Kent County has the
-          highest renter burden in Maryland at 59.6%</b> while
-          <b>Garrett County sits at 35%</b>. Nothing that flags the gap
-          between the Census median rent and what landlords are asking
-          for today.
+          Housing affordability affects communities across Maryland, but
+          understanding how much rent burdens people can mean digging
+          through multiple Census tables and overlapping survey periods.
+          I wanted to make that information easier to find, compare, and
+          explore in one place.
         </p>
 
         <p>
-          So I pulled the data, cleaned it, and built this. It updates
-          automatically every month. No ads, no tracking, no cookies.
-          If the tool helped you, there's a coffee link at the bottom of
-          the page. If you're hiring for a UX or Analytics Engineer role, my work is on
-          LinkedIn and GitHub — links below.
+          So I built Maryland Housing Burden, a free tool comparing
+          renter burden across all 24 Maryland jurisdictions, alongside
+          data that helps put reported rents into context.
+        </p>
+
+        <p>
+          The data refreshes automatically every month. No ads, no
+          tracking, no cookies.
+        </p>
+
+        <p>
+          If this tool helped you, there's a coffee link at the bottom of
+          the page. If you're hiring for UX, design systems, or analytics
+          engineering roles, you can find more of my work on LinkedIn and
+          GitHub.
         </p>
 
         <p class="about-links">
