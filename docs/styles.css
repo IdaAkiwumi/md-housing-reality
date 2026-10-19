@@ -266,7 +266,10 @@ a:focus-visible,
   font-size: 0.72rem;
 }
 
-/* ---------- Stat band ---------- */
+/* ---------- Stat band ----------
+   Explicit 7-column grid eliminates the auto-fit phantom track
+   that was leaving empty space after the last tile. Gap bumped
+   to 2rem so the pipe has 1rem of clear space on each side. */
 .hits {
   position: relative;
   background: var(--hits-bg);
@@ -275,9 +278,22 @@ a:focus-visible,
   border-radius: 8px;
   padding: 1.2rem 1.3rem 1.3rem;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
-  gap: 0.9rem 1.5rem;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1rem 2rem;
   margin-bottom: 1.6rem;
+}
+
+@media (max-width: 900px) {
+  .hits {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .hits {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
 }
 
 .hits-header {
@@ -305,7 +321,7 @@ a:focus-visible,
   line-height: 1.1;
 }
 
-/* Info icon, absolutely positioned in the top-right of the amber band */
+/* Info icon in top-right corner of amber band */
 .info-wrap {
   position: absolute;
   top: 0.9rem;
@@ -341,7 +357,6 @@ a:focus-visible,
   outline-offset: 2px;
 }
 
-/* Tooltip: display none by default, block on hover/focus. No inline flash. */
 .info-tip {
   display: none;
   position: absolute;
@@ -382,16 +397,20 @@ a:focus-visible,
   display: block;
 }
 
+/* Each stat tile: content centered so narrow labels don't leave
+   asymmetric dead space on the right. */
 .hit {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  text-align: center;
   gap: 0.3rem;
   min-width: 0;
 }
 
 .hit b {
   font-family: var(--f-mono);
-  font-size: clamp(1.25rem, 2.2vw, 1.75rem);
+  font-size: clamp(1.35rem, 2.4vw, 1.9rem);
   font-weight: 600;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -413,17 +432,18 @@ a:focus-visible,
   position: relative;
 }
 
+/* Pipe sits at the exact center of the 2rem gap: 1rem on each side */
 .hit.personal-first::before {
   content: "";
   position: absolute;
-  left: -0.75rem;
+  left: -1rem;
   top: 0.25rem;
   bottom: 0.25rem;
   width: 1px;
   background: color-mix(in srgb, var(--hits-ink) 42%, transparent);
 }
 
-@media (max-width: 720px) {
+@media (max-width: 600px) {
   .hit.personal-first::before { display: none; }
 }
 
