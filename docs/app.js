@@ -457,6 +457,13 @@ function renderBurdenDistribution() {
 
     $("chartSummaryLine").textContent =
       `Selected: ${r.name} (${percentShort(r.burden_percent)} of surveyed renter households spending 30%+ on gross rent). Click any dot on the chart to inspect another county.`;
+
+    const wrap = $("distributionChartWrap");
+    if (wrap && wrap.scrollWidth > wrap.clientWidth) {
+      const scrollRatio = x / width;
+      const targetScroll = (scrollRatio * wrap.scrollWidth) - (wrap.clientWidth / 2);
+      wrap.scrollTo({ left: Math.max(0, targetScroll), behavior: "smooth" });
+    }
   }
 }
 

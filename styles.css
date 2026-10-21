@@ -75,12 +75,15 @@ body {
   font-family: var(--f-display);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 .page {
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
   padding: 1.6rem 1rem 3rem;
+  box-sizing: border-box;
 }
 
 .skip {
@@ -711,15 +714,25 @@ form > button { margin-top: 0.6rem; }
 /* ---------- VISUAL IMPROVEMENT 3: Census vs. Zillow Rental Comparison Card ---------- */
 .dashboard-top-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 1.2rem;
   align-items: stretch;
   margin: 1.2rem 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
-@media (max-width: 860px) {
+.dashboard-top-grid > * {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
   .dashboard-top-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
   }
 }
 
@@ -734,13 +747,18 @@ form > button { margin-top: 0.6rem; }
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .comp-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.6rem;
   margin-bottom: 0.8rem;
 }
 
@@ -748,6 +766,9 @@ form > button { margin-top: 0.6rem; }
   margin: 0.2rem 0 0;
   font-size: 1.15rem;
   font-weight: 800;
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .comp-tag {
@@ -761,18 +782,22 @@ form > button { margin-top: 0.6rem; }
   background: var(--accent-soft);
   color: var(--accent);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .comp-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 1.2rem;
   align-items: stretch;
+  min-width: 0;
+  max-width: 100%;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .comp-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.85rem;
   }
 }
 
@@ -784,12 +809,17 @@ form > button { margin-top: 0.6rem; }
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .comp-val-line {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.4rem;
   margin-bottom: 0.6rem;
 }
 
@@ -797,6 +827,8 @@ form > button { margin-top: 0.6rem; }
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--ink-2);
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .comp-val-line b {
@@ -804,10 +836,12 @@ form > button { margin-top: 0.6rem; }
   font-size: 1.25rem;
   font-weight: 800;
   color: var(--ink);
+  white-space: nowrap;
 }
 
 .comp-bar-shell {
   width: 100%;
+  max-width: 100%;
   height: 8px;
   background: var(--hair);
   border-radius: 4px;
@@ -834,6 +868,7 @@ form > button { margin-top: 0.6rem; }
   color: var(--muted);
   line-height: 1.35;
   margin: 0;
+  overflow-wrap: break-word;
 }
 
 
@@ -849,13 +884,18 @@ form > button { margin-top: 0.6rem; }
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .panel-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 1rem;
+  flex-wrap: wrap;
+  gap: 0.6rem;
   margin-bottom: 0.3rem;
 }
 
@@ -863,6 +903,8 @@ form > button { margin-top: 0.6rem; }
   margin: 0.2rem 0 0;
   font-size: 1.15rem;
   font-weight: 800;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .panel-tag {
@@ -876,19 +918,61 @@ form > button { margin-top: 0.6rem; }
   background: var(--warn-bg);
   color: var(--warn);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .distribution-chart-wrap {
   width: 100%;
+  max-width: 100%;
   overflow-x: auto;
-  margin: 0.8rem 0;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  margin: 0.8rem 0 0.4rem;
+  padding-bottom: 0.35rem;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: var(--hair) transparent;
+}
+
+.distribution-chart-wrap::-webkit-scrollbar {
+  height: 6px;
+}
+.distribution-chart-wrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+.distribution-chart-wrap::-webkit-scrollbar-thumb {
+  background-color: var(--hair);
+  border-radius: 3px;
 }
 
 .distribution-chart-wrap svg {
   width: 100%;
+  max-width: 100%;
   height: auto;
   display: block;
-  min-width: 600px;
+}
+
+@media (max-width: 640px) {
+  .distribution-chart-wrap svg {
+    min-width: 520px;
+    max-width: none;
+  }
+}
+
+.distribution-scroll-hint {
+  display: none;
+  font-family: var(--f-mono);
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-align: right;
+  margin: 0 0 0.35rem;
+  user-select: none;
+}
+
+@media (max-width: 640px) {
+  .distribution-scroll-hint {
+    display: block;
+  }
 }
 
 .chart-summary-line {
@@ -898,6 +982,16 @@ form > button { margin-top: 0.6rem; }
   border-top: 1px solid var(--hair);
   padding-top: 0.6rem;
   margin-top: 0.4rem;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.45;
+}
+
+@media (max-width: 560px) {
+  .rent-comparison-card,
+  .state-burden-panel {
+    padding: 1rem 0.95rem;
+  }
 }
 
 /* ---------- Renter burden story ---------- */
