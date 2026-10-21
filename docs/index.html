@@ -381,86 +381,105 @@
             </div>
           </div>
 
-          <!-- Main Map Display and Floating Tooltip Container -->
-          <div class="map-stage" id="mapStage">
-            <div class="map-svg-wrap" id="mapSvgWrap" role="region" aria-label="Interactive Maryland county map">
-              <svg id="marylandMapSvg" viewBox="0 0 960 520" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="mapHeading">
-                <defs>
-                  <!-- Pattern for counties missing Zillow data -->
-                  <pattern id="diagonalHatch" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
-                    <line x1="0" y1="0" x2="0" y2="8" stroke="#9ca3af" stroke-width="2" />
-                  </pattern>
-                </defs>
-                <g id="mapWaterBg" class="map-water"></g>
-                <g id="mapCountiesGroup" class="map-counties"></g>
-                <g id="mapLabelsGroup" class="map-labels" pointer-events="none"></g>
-                <g id="mapSelectionGroup" class="map-selection" pointer-events="none"></g>
-              </svg>
-
-              <!-- Floating Tooltip on Hover -->
-              <div class="map-floating-tooltip" id="mapTooltip" role="tooltip" hidden>
-                <div class="tooltip-header">
-                  <b class="tooltip-name" id="tipCountyName">—</b>
-                  <span class="tooltip-rank" id="tipCountyRank">#— of 24</span>
+          <!-- Map Workspace: Map on the left/main, County Snapshot on the side -->
+          <div class="map-workspace" id="mapWorkspace">
+            <!-- Main Map Column -->
+            <div class="map-main-col">
+              <div class="map-stage" id="mapStage">
+                <!-- Floating Zoom Controls Toolbar -->
+                <div class="map-zoom-controls" role="toolbar" aria-label="Map zoom controls">
+                  <button type="button" class="map-zoom-btn" id="mapZoomIn" aria-label="Zoom in" title="Zoom in (+)">
+                    <span aria-hidden="true">+</span>
+                  </button>
+                  <button type="button" class="map-zoom-btn" id="mapZoomOut" aria-label="Zoom out" title="Zoom out (−)">
+                    <span aria-hidden="true">−</span>
+                  </button>
+                  <button type="button" class="map-zoom-btn" id="mapZoomReset" aria-label="Reset zoom" title="Reset zoom (100%)">
+                    <span aria-hidden="true">↺</span>
+                  </button>
+                  <span class="map-zoom-pill" id="mapZoomLevel" title="Current zoom level">100%</span>
                 </div>
-                <div class="tooltip-primary-val" id="tipPrimaryVal">—</div>
-                <div class="tooltip-sub" id="tipSecondaryVal">—</div>
-                <div class="tooltip-hint">Click to inspect and select</div>
-              </div>
-            </div>
 
-            <!-- Map Legend and Summary Bar -->
-            <div class="map-legend-bar">
-              <div class="legend-scale-block">
-                <div class="legend-title-row">
-                  <span class="legend-label" id="legendMetricLabel">Renter Cost Burden (% spending 30%+ on gross rent)</span>
-                  <span class="legend-state-avg" id="legendStateAvg">MD State Average: 49.3%</span>
+                <div class="map-svg-wrap" id="mapSvgWrap" role="region" aria-label="Interactive Maryland county map. Scroll or use buttons to zoom, click and drag to pan when zoomed.">
+                  <svg id="marylandMapSvg" viewBox="0 0 960 520" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="mapHeading">
+                    <defs>
+                      <!-- Pattern for counties missing Zillow data -->
+                      <pattern id="diagonalHatch" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                        <line x1="0" y1="0" x2="0" y2="8" stroke="#9ca3af" stroke-width="2" />
+                      </pattern>
+                    </defs>
+                    <g id="mapWaterBg" class="map-water"></g>
+                    <g id="mapCountiesGroup" class="map-counties"></g>
+                    <g id="mapLabelsGroup" class="map-labels" pointer-events="none"></g>
+                    <g id="mapSelectionGroup" class="map-selection" pointer-events="none"></g>
+                  </svg>
+
+                  <!-- Floating Tooltip on Hover -->
+                  <div class="map-floating-tooltip" id="mapTooltip" role="tooltip" hidden>
+                    <div class="tooltip-header">
+                      <b class="tooltip-name" id="tipCountyName">—</b>
+                      <span class="tooltip-rank" id="tipCountyRank">#— of 24</span>
+                    </div>
+                    <div class="tooltip-primary-val" id="tipPrimaryVal">—</div>
+                    <div class="tooltip-sub" id="tipSecondaryVal">—</div>
+                    <div class="tooltip-hint">Click to inspect and select</div>
+                  </div>
                 </div>
-                <div class="legend-bar-track" id="legendGradientTrack"></div>
-                <div class="legend-scale-labels" id="legendScaleLabels">
-                  <span id="legendMin">—</span>
-                  <span id="legendMid">—</span>
-                  <span id="legendMax">—</span>
+
+                <!-- Map Legend and Summary Bar -->
+                <div class="map-legend-bar">
+                  <div class="legend-scale-block">
+                    <div class="legend-title-row">
+                      <span class="legend-label" id="legendMetricLabel">Renter Cost Burden (% spending 30%+ on gross rent)</span>
+                      <span class="legend-state-avg" id="legendStateAvg">MD State Average: 49.3%</span>
+                    </div>
+                    <div class="legend-bar-track" id="legendGradientTrack"></div>
+                    <div class="legend-scale-labels" id="legendScaleLabels">
+                      <span id="legendMin">—</span>
+                      <span id="legendMid">—</span>
+                      <span id="legendMax">—</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Bottom Inspector Card for Inspected / Selected County -->
-          <div class="map-inspector" id="mapInspector">
-            <div class="inspector-summary">
-              <div class="inspector-badge-row">
-                <span class="inspector-kicker">County Snapshot</span>
-                <span class="inspector-tag" id="inspStatusTag">Active County</span>
+            <!-- Side Inspector Card for Inspected / Selected County Snapshot -->
+            <aside class="map-inspector-sidebar" id="mapInspector" aria-label="County snapshot inspector">
+              <div class="inspector-summary">
+                <div class="inspector-badge-row">
+                  <span class="inspector-kicker">County Snapshot</span>
+                  <span class="inspector-tag" id="inspStatusTag">Active County</span>
+                </div>
+                <h4 class="inspector-title" id="inspCountyName">Allegany County</h4>
+                <p class="inspector-desc" id="inspSummaryText">
+                  43.6% of renter households pay 30% or more of income on gross rent.
+                </p>
               </div>
-              <h4 class="inspector-title" id="inspCountyName">Allegany County</h4>
-              <p class="inspector-desc" id="inspSummaryText">
-                43.6% of renter households pay 30% or more of income on gross rent.
-              </p>
-            </div>
 
-            <div class="inspector-stats-grid">
-              <div class="inspector-stat">
-                <span class="insp-stat-label">Census Median Rent</span>
-                <b class="insp-stat-val" id="inspCensusRent">$805</b>
-                <span class="insp-stat-sub" id="inspRentMoe">±$41 MOE</span>
+              <div class="inspector-stats-grid">
+                <div class="inspector-stat">
+                  <span class="insp-stat-label">Census Median Rent</span>
+                  <b class="insp-stat-val" id="inspCensusRent">$805</b>
+                  <span class="insp-stat-sub" id="inspRentMoe">±$41 MOE</span>
+                </div>
+                <div class="inspector-stat">
+                  <span class="insp-stat-label">Market Rent (ZORI)</span>
+                  <b class="insp-stat-val" id="inspMarketRent">$1,020</b>
+                  <span class="insp-stat-sub">Monthly asking rent</span>
+                </div>
+                <div class="inspector-stat">
+                  <span class="insp-stat-label">Cost Burden</span>
+                  <b class="insp-stat-val" id="inspBurden">43.6%</b>
+                  <span class="insp-stat-sub" id="inspBurdenRank">Rank #21 of 24</span>
+                </div>
+                <div class="inspector-stat">
+                  <span class="insp-stat-label">Your Rent Share</span>
+                  <b class="insp-stat-val" id="inspShare">14.9%</b>
+                  <span class="insp-stat-sub" id="inspShareAfford">Affordable (under 30%)</span>
+                </div>
               </div>
-              <div class="inspector-stat">
-                <span class="insp-stat-label">Market Rent (ZORI)</span>
-                <b class="insp-stat-val" id="inspMarketRent">$1,020</b>
-                <span class="insp-stat-sub">Monthly asking rent</span>
-              </div>
-              <div class="inspector-stat">
-                <span class="insp-stat-label">Cost Burden</span>
-                <b class="insp-stat-val" id="inspBurden">43.6%</b>
-                <span class="insp-stat-sub" id="inspBurdenRank">Rank #21 of 24</span>
-              </div>
-              <div class="inspector-stat">
-                <span class="insp-stat-label">Your Rent Share</span>
-                <b class="insp-stat-val" id="inspShare">14.9%</b>
-                <span class="insp-stat-sub" id="inspShareAfford">Affordable (under 30%)</span>
-              </div>
-            </div>
+            </aside>
           </div>
         </section>
 

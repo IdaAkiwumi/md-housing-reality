@@ -575,6 +575,105 @@ function getColorForNormalizedValue(valNormalized, palette) {
   return palette[palette.length - 1].color;
 }
 
+/* Map Zoom and Pan State */
+const MAP_BASE_WIDTH = 960;
+const MAP_BASE_HEIGHT = 520;
+let mapZoomScale = 1.0;
+let mapViewX = 0;
+let mapViewY = 0;
+let mapViewWidth = MAP_BASE_WIDTH;
+let mapViewHeight = MAP_BASE_HEIGHT;
+
+let mapIsPointerDown = false;
+let mapIsDragging = false;
+let mapDragStartX = 0;
+let mapDragStartY = 0;
+let mapDragStartViewX = 0;
+let mapDragStartViewY = 0;
+let mapJustDragged = false;
+
+function applyMapViewBox() {
+  const mapSvg = $("marylandMapSvg");
+  const zoomLevel = $("mapZoomLevel");
+  const zoomInBtn = $("mapZoomIn");
+  const zoomOutBtn = $("mapZoomOut");
+  const zoomResetBtn = $("mapZoomReset");
+  const svgWrap = $("mapSvgWrap");
+
+  if (!mapSvg) return;
+
+  mapSvg.setAttribute(
+    "viewBox",
+    `${mapViewX.toFixed(2)} ${mapViewY.toFixed(2)} ${mapViewWidth.toFixed(2)} ${mapViewHeight.toFixed(2)}`
+  );
+
+  if (zoomLevel) {
+    zoomLevel.textContent = `${Math.round(mapZoomScale * 100)}%`;
+  }
+  if (zoomInBtn) {
+    zoomInBtn.disabled = mapZoomScale >= 3.99;
+  }
+  if (zoomOutBtn) {
+    zoomOutBtn.disabled = mapZoomScale <= 1.01;
+  }
+  if (zoomResetBtn) {
+    zoomResetBtn.disabled = mapZoomScale <= 1.01 && mapViewX === 0 && mapViewY === 0;
+  }
+  if (svgWrap) {
+    if (mapZoomScale > 1.05) {
+      svgWrap.classList.add("is-zoomed");
+    } else {
+      svgWrap.classList.remove("is-zoomed");
+    }
+  }
+}
+
+function zoomMarylandMap(factor, anchorX, anchorY) {
+  const minZoom = 1.0;
+  const maxZoom = 4.0;
+  const nextZoom = Math.max(minZoom, Math.min(maxZoom, mapZoomScale * factor));
+  if (Math.abs(nextZoom - mapZoomScale) < 0.001) return;
+
+  const nextWidth = MAP_BASE_WIDTH / nextZoom;
+  const nextHeight = MAP_BASE_HEIGHT / nextZoom;
+
+  const ax = anchorX !== undefined ? anchorX : mapViewX + mapViewWidth / 2;
+  const ay = anchorY !== undefined ? anchorY : mapViewY + mapViewHeight / 2;
+
+  const relX = (ax - mapViewX) / mapViewWidth;
+  const relY = (ay - mapViewY) / mapViewHeight;
+
+  let nextX = ax - relX * nextWidth;
+  let nextY = ay - relY * nextHeight;
+
+  const maxOverflowX = MAP_BASE_WIDTH * 0.08;
+  const maxOverflowY = MAP_BASE_HEIGHT * 0.08;
+  nextX = Math.max(-maxOverflowX, Math.min(MAP_BASE_WIDTH + maxOverflowX - nextWidth, nextX));
+  nextY = Math.max(-maxOverflowY, Math.min(MAP_BASE_HEIGHT + maxOverflowY - nextHeight, nextY));
+
+  if (nextZoom <= 1.001) {
+    nextX = 0;
+    nextY = 0;
+  }
+
+  mapZoomScale = nextZoom;
+  mapViewX = nextX;
+  mapViewY = nextY;
+  mapViewWidth = nextWidth;
+  mapViewHeight = nextHeight;
+
+  applyMapViewBox();
+}
+
+function resetMarylandMapZoom() {
+  mapZoomScale = 1.0;
+  mapViewX = 0;
+  mapViewY = 0;
+  mapViewWidth = MAP_BASE_WIDTH;
+  mapViewHeight = MAP_BASE_HEIGHT;
+  applyMapViewBox();
+}
+
 function selectCountyFromMap(countyId) {
   if (!countyId) return;
   $("county").value = countyId;
@@ -689,6 +788,7 @@ async function initMarylandMap() {
     path.setAttribute("role", "button");
 
     path.addEventListener("click", () => {
+      if (mapJustDragged) return;
       selectCountyFromMap(fips);
     });
 
@@ -700,11 +800,13 @@ async function initMarylandMap() {
     });
 
     path.addEventListener("mouseenter", e => {
+      if (mapIsDragging) return;
       updateMapInspector(fips);
       showMapTooltip(fips, e);
     });
 
     path.addEventListener("mousemove", e => {
+      if (mapIsDragging) return;
       positionMapTooltip(e);
     });
 
@@ -726,8 +828,7 @@ async function initMarylandMap() {
     countiesGroup.appendChild(path);
   });
 
-  // Geographic regional labels
-  // County labels group left empty so map shapes and choropleth colors remain pristine, clean, and legible
+  // County labels group left empty so map shapes and choropleth colors remain pristine and legible
   while (labelsGroup.firstChild) labelsGroup.removeChild(labelsGroup.firstChild);
 
   // Metric Toggle Buttons
@@ -741,16 +842,146 @@ async function initMarylandMap() {
     });
   });
 
-  // Mousemove for tooltip
-  if (svgWrap) {
+  // Wire Zoom Toolbar buttons
+  const zoomInBtn = $("mapZoomIn");
+  const zoomOutBtn = $("mapZoomOut");
+  const zoomResetBtn = $("mapZoomReset");
+
+  if (zoomInBtn) {
+    zoomInBtn.addEventListener("click", e => {
+      e.stopPropagation();
+      zoomMarylandMap(1.3);
+    });
+  }
+  if (zoomOutBtn) {
+    zoomOutBtn.addEventListener("click", e => {
+      e.stopPropagation();
+      zoomMarylandMap(1 / 1.3);
+    });
+  }
+  if (zoomResetBtn) {
+    zoomResetBtn.addEventListener("click", e => {
+      e.stopPropagation();
+      resetMarylandMapZoom();
+    });
+  }
+
+  // Mouse wheel zoom
+  if (svgWrap && mapSvg) {
+    svgWrap.addEventListener("wheel", e => {
+      e.preventDefault();
+      const rect = mapSvg.getBoundingClientRect();
+      const mouseSvgX = mapViewX + ((e.clientX - rect.left) / rect.width) * mapViewWidth;
+      const mouseSvgY = mapViewY + ((e.clientY - rect.top) / rect.height) * mapViewHeight;
+      const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+      zoomMarylandMap(factor, mouseSvgX, mouseSvgY);
+    }, { passive: false });
+
+    // Drag to pan when zoomed
+    svgWrap.addEventListener("pointerdown", e => {
+      if (e.button !== 0) return;
+      if (mapZoomScale <= 1.0) return;
+      mapIsPointerDown = true;
+      mapIsDragging = false;
+      mapDragStartX = e.clientX;
+      mapDragStartY = e.clientY;
+      mapDragStartViewX = mapViewX;
+      mapDragStartViewY = mapViewY;
+    });
+
+    window.addEventListener("pointermove", e => {
+      if (!mapIsPointerDown) return;
+      const dx = e.clientX - mapDragStartX;
+      const dy = e.clientY - mapDragStartY;
+      if (!mapIsDragging && Math.hypot(dx, dy) > 4) {
+        mapIsDragging = true;
+        svgWrap.classList.add("is-panning");
+        hideMapTooltip();
+      }
+      if (mapIsDragging) {
+        const rect = mapSvg.getBoundingClientRect();
+        const svgScaleX = mapViewWidth / rect.width;
+        const svgScaleY = mapViewHeight / rect.height;
+        let newX = mapDragStartViewX - dx * svgScaleX;
+        let newY = mapDragStartViewY - dy * svgScaleY;
+        const maxOverflowX = MAP_BASE_WIDTH * 0.08;
+        const maxOverflowY = MAP_BASE_HEIGHT * 0.08;
+        newX = Math.max(-maxOverflowX, Math.min(MAP_BASE_WIDTH + maxOverflowX - mapViewWidth, newX));
+        newY = Math.max(-maxOverflowY, Math.min(MAP_BASE_HEIGHT + maxOverflowY - mapViewHeight, newY));
+        mapViewX = newX;
+        mapViewY = newY;
+        applyMapViewBox();
+      }
+    });
+
+    window.addEventListener("pointerup", () => {
+      if (mapIsPointerDown) {
+        mapIsPointerDown = false;
+        svgWrap.classList.remove("is-panning");
+        if (mapIsDragging) {
+          mapJustDragged = true;
+          mapIsDragging = false;
+          setTimeout(() => { mapJustDragged = false; }, 80);
+        }
+      }
+    });
+
+    window.addEventListener("pointercancel", () => {
+      mapIsPointerDown = false;
+      mapIsDragging = false;
+      svgWrap.classList.remove("is-panning");
+    });
+
+    // Touch pinch-to-zoom
+    let initialPinchDistance = null;
+    let pinchAnchor = null;
+
+    svgWrap.addEventListener("touchstart", e => {
+      if (e.touches.length === 2) {
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        initialPinchDistance = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        const rect = mapSvg.getBoundingClientRect();
+        const midX = (t1.clientX + t2.clientX) / 2;
+        const midY = (t1.clientY + t2.clientY) / 2;
+        pinchAnchor = {
+          x: mapViewX + ((midX - rect.left) / rect.width) * mapViewWidth,
+          y: mapViewY + ((midY - rect.top) / rect.height) * mapViewHeight
+        };
+      }
+    }, { passive: true });
+
+    svgWrap.addEventListener("touchmove", e => {
+      if (e.touches.length === 2 && initialPinchDistance && pinchAnchor) {
+        e.preventDefault();
+        const t1 = e.touches[0];
+        const t2 = e.touches[1];
+        const currentDistance = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+        const ratio = currentDistance / initialPinchDistance;
+        if (Math.abs(ratio - 1) > 0.04) {
+          zoomMarylandMap(ratio > 1 ? 1.04 : 0.96, pinchAnchor.x, pinchAnchor.y);
+          initialPinchDistance = currentDistance;
+        }
+      }
+    }, { passive: false });
+
+    svgWrap.addEventListener("touchend", e => {
+      if (e.touches.length < 2) {
+        initialPinchDistance = null;
+        pinchAnchor = null;
+      }
+    }, { passive: true });
+
+    // Mousemove for tooltip
     svgWrap.addEventListener("mousemove", e => {
-      if (tooltip && !tooltip.hidden) {
+      if (tooltip && !tooltip.hidden && !mapIsDragging) {
         positionMapTooltip(e);
       }
     });
   }
 
   // Initial update
+  applyMapViewBox();
   updateMarylandMap();
 }
 
@@ -795,14 +1026,12 @@ function showMapTooltip(fips, mouseEvent, fallbackX, fallbackY) {
     positionMapTooltip(mouseEvent);
   } else if (fallbackX !== undefined && fallbackY !== undefined) {
     const wrap = $("mapSvgWrap");
-    const svg = $("marylandMapSvg");
-    if (wrap && svg) {
-      const rect = svg.getBoundingClientRect();
+    const pathEl = document.getElementById(`mapCounty_${fips}`);
+    if (wrap && pathEl) {
+      const pathRect = pathEl.getBoundingClientRect();
       const wrapRect = wrap.getBoundingClientRect();
-      const scaleX = rect.width / 960;
-      const scaleY = rect.height / 520;
-      const screenX = (rect.left - wrapRect.left) + fallbackX * scaleX;
-      const screenY = (rect.top - wrapRect.top) + fallbackY * scaleY;
+      const screenX = pathRect.left - wrapRect.left + pathRect.width / 2;
+      const screenY = pathRect.top - wrapRect.top + pathRect.height / 2;
       applyTooltipPosition(screenX, screenY);
     }
   }
@@ -826,7 +1055,7 @@ function applyTooltipPosition(x, y) {
 
   // Vertical placement:
   // When hovering near top corners or edges (e.g. Garrett, Allegany, Washington, Carroll, Cecil),
-  // there isn't enough space above the cursor without clipping, so flip downwards below cursor.
+  // there isn't enough space above the cursor without clipping, so flip cleanly downwards below cursor.
   let targetTop = y - tipH - 14;
   if (targetTop < 8) {
     targetTop = y + 20; // flip cleanly below the cursor
