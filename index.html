@@ -18,7 +18,18 @@
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="manifest" href="site.webmanifest">
-  <meta name="theme-color" content="#fbbf24">
+  <meta name="theme-color" content="#12151c" id="metaThemeColor">
+  <script>
+    (function() {
+      try {
+        var saved = localStorage.getItem('md_housing_theme');
+        var theme = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+        var meta = document.getElementById('metaThemeColor');
+        if (meta) meta.setAttribute('content', theme === 'dark' ? '#12151c' : '#f5f6f9');
+      } catch(e) {}
+    })();
+  </script>
 
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Maryland Housing Burden">
@@ -111,6 +122,35 @@
   <a class="skip" href="#main">Skip to content</a>
 
   <div class="page">
+    <!-- Top Theme Toggle (Top Right) -->
+    <div class="top-bar">
+      <div class="theme-toggle-wrap">
+        <button
+          type="button"
+          class="theme-btn"
+          id="themeToggleBtn"
+          role="switch"
+          aria-checked="false"
+          aria-label="Switch to light theme"
+          title="Switch theme (Light / Dark)"
+        >
+          <span class="theme-icon-slot opt-light" aria-hidden="true">
+            <svg class="theme-icon-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="4"></circle>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+            </svg>
+          </span>
+          <span class="theme-icon-slot opt-dark" aria-hidden="true">
+            <svg class="theme-icon-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3a6 6 0 0 0 9 9 9 0 1 1-9-9Z"></path>
+            </svg>
+          </span>
+          <span class="theme-pill-slider" aria-hidden="true"></span>
+          <span class="sr-only" id="themeAriaStatus">Theme: Dark mode. Click to toggle.</span>
+        </button>
+      </div>
+    </div>
+
     <header class="hero">
       <div class="hero-l">
         <div class="eyebrow">Maryland · updated monthly</div>

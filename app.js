@@ -31,6 +31,91 @@ function showToast(message) {
   }, 3400);
 }
 
+/* ---------- Theme Switcher ---------- */
+function getPreferredTheme() {
+  try {
+    const saved = localStorage.getItem("md_housing_theme");
+    if (saved === "light" || saved === "dark") return saved;
+  } catch (e) {}
+  if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    return "dark";
+  }
+  return "light";
+}
+
+function applyTheme(theme, isUserAction = false) {
+  document.documentElement.setAttribute("data-theme", theme);
+  try {
+    localStorage.setItem("md_housing_theme", theme);
+  } catch (e) {}
+
+  const themeToggleBtn = $("themeToggleBtn");
+  const themeAriaStatus = $("themeAriaStatus");
+  if (themeToggleBtn) {
+    themeToggleBtn.setAttribute("aria-checked", theme === "dark" ? "true" : "false");
+    themeToggleBtn.setAttribute(
+      "aria-label",
+      theme === "dark" ? "Switch to light theme" : "Switch to dark theme"
+    );
+    themeToggleBtn.setAttribute(
+      "title",
+      theme === "dark" ? "Switch to light theme" : "Switch to dark theme"
+    );
+  }
+  if (themeAriaStatus) {
+    themeAriaStatus.textContent = `Theme: ${theme === "dark" ? "Dark" : "Light"} mode. Click to toggle.`;
+  }
+
+  const metaThemeColor = $("metaThemeColor");
+  if (metaThemeColor) {
+    metaThemeColor.setAttribute("content", theme === "dark" ? "#12151c" : "#f4f6f9");
+  }
+
+  if (data) {
+    renderBurdenDistribution();
+    updateMarylandMap();
+  }
+
+  if (isUserAction) {
+    showToast(`Switched to ${theme === "dark" ? "Dark" : "Light"} mode`);
+  }
+}
+
+function initThemeToggle() {
+  const currentTheme = document.documentElement.getAttribute("data-theme") || getPreferredTheme();
+  applyTheme(currentTheme, false);
+
+  const toggleBtn = $("themeToggleBtn");
+  if (toggleBtn) {
+    toggleBtn.addEventListener("click", (e) => {
+      const activeTheme = document.documentElement.getAttribute("data-theme") || "dark";
+      const clickedLight = Boolean(e.target.closest(".opt-light"));
+      const clickedDark = Boolean(e.target.closest(".opt-dark"));
+
+      let nextTheme;
+      if (clickedLight && activeTheme !== "light") {
+        nextTheme = "light";
+      } else if (clickedDark && activeTheme !== "dark") {
+        nextTheme = "dark";
+      } else {
+        nextTheme = activeTheme === "dark" ? "light" : "dark";
+      }
+
+      applyTheme(nextTheme, true);
+    });
+  }
+
+  if (window.matchMedia) {
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", e => {
+      try {
+        if (!localStorage.getItem("md_housing_theme")) {
+          applyTheme(e.matches ? "dark" : "light", false);
+        }
+      } catch (err) {}
+    });
+  }
+}
+
 /* ---------- Formatting ---------- */
 function dollars(value) {
   if (value === null || !Number.isFinite(value)) return "—";
@@ -1776,6 +1861,7 @@ $("showCounty").addEventListener("click", () => {
 
 /* ---------- Boot ---------- */
 async function start() {
+  initThemeToggle();
   updateScenarioIncomeLabel();
 
   try {
