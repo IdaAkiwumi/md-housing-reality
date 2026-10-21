@@ -4,10 +4,9 @@ const $ = id => document.getElementById(id);
 
 /* ---------- Config ---------- */
 const SUBSTACK_SHARE_URL = "https://substack.com/notes";
-
 const SITE_TITLE = "Maryland Housing Burden";
 const SITE_BLURB =
-  "What rent actually costs. What income you'd need. How you compare.";
+  "What rent actually costs. What income you would need. How you compare across Maryland.";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -50,6 +49,7 @@ function percentShort(value) {
 
 function readNumber(id) {
   const field = $(id);
+  if (!field) return null;
   const raw = field.value.trim();
   if (raw === "" || !field.checkValidity()) return null;
   const value = Number(raw);
@@ -81,13 +81,16 @@ function addResultLine(parent, text) {
 
 function updateScenarioIncomeLabel() {
   const income = readNumber("income");
-  $("scenarioIncome").textContent = income === null
+  const el = $("scenarioIncome");
+  if (!el) return;
+  el.textContent = income === null
     ? "Enter a valid yearly household income above."
     : `Starting yearly income: ${dollars(income)}.`;
 }
 
 function markResultAsNeedingUpdate(resultId, message) {
-  $(resultId).textContent = message;
+  const el = $(resultId);
+  if (el) el.textContent = message;
 }
 
 function latestRowFor(countyId) {
@@ -103,10 +106,10 @@ function sortValueFor(row, column) {
   if (column === "name") return row.name;
   if (column === "rent") return row.rent;
   if (column === "market_rent_now") return row.market_rent_now;
-  if (column === "benchmark") return row.rent == null ? null : row.rent * 12 / 0.30;
+  if (column === "benchmark") return row.rent == null ? null : (row.rent * 12) / 0.30;
   if (column === "share") {
     if (comparedIncome == null || comparedIncome <= 0) return null;
-    return row.rent == null ? null : row.rent * 12 / comparedIncome * 100;
+    return row.rent == null ? null : (row.rent * 12 / comparedIncome) * 100;
   }
   if (column === "burden_percent") return row.burden_percent;
   return null;
@@ -168,32 +171,801 @@ function computeStatewideAverages() {
   return { avgRent, count: latestRows.length };
 }
 
-/* ---------- Stat band ---------- */
+/* ---------- YELLOW SUMMARY BAR & 2 MICROCHARTS ---------- */
 function updateStatBand() {
   if (!data) return;
-  const row = latestRowFor($("county").value);
+  const selectedCountyId = $("county").value;
+  const row = latestRowFor(selectedCountyId);
   if (!row) return;
 
+  // Header and standard number tiles
   $("hitsCountyName").textContent = row.name;
   $("hitRent").textContent = dollars(row.rent);
   $("hitMarketRent").textContent = row.market_rent_now
     ? dollars(row.market_rent_now)
     : "—";
-  $("hitBenchmark").textContent = dollars(row.rent * 12 / 0.30);
-  $("hitBurden").textContent = percentShort(row.burden_percent);
+  $("hitBenchmark").textContent = dollars((row.rent * 12) / 0.30);
 
   const md = computeStatewideAverages();
   if (md) $("hitMdAvg").textContent = dollars(md.avgRent);
 
+  // MICROCHART 1: Renter Cost Burden (Horizontal Proportion Bar on 0-100% scale)
+  const burdenVal = row.burden_percent;
+  if (burdenVal !== null && Number.isFinite(burdenVal)) {
+    $("hitBurden").textContent = percentShort(burdenVal);
+    const clampedWidth = Math.max(0, Math.min(100, burdenVal));
+    $("hitBurdenFill").style.width = `${clampedWidth.toFixed(1)}%`;
+    $("hitBurdenBarWrap").setAttribute(
+      "aria-label",
+      `Renter cost burden in ${row.name}: ${percentShort(burdenVal)} of surveyed renter households spend 30% or more of income on rent.`
+    );
+  } else {
+    $("hitBurden").textContent = "—";
+    $("hitBurdenFill").style.width = "0%";
+    $("hitBurdenBarWrap").setAttribute("aria-label", "Renter cost burden not available");
+  }
+
+  // Personal Income Display
   if (comparedIncome === null || comparedIncome <= 0) {
     $("hitIncome").textContent = "—";
     $("hitShare").textContent = "—";
+    $("hitShareFill").style.width = "0%";
+    $("hitShareTarget").style.display = "none";
+    $("hitShareBulletWrap").setAttribute(
+      "aria-label",
+      "Rent share not calculated. Enter your household income to calculate."
+    );
     return;
   }
 
   $("hitIncome").textContent = dollars(comparedIncome);
-  const share = row.rent * 12 / comparedIncome * 100;
+
+  // MICROCHART 2: Rent Share Bullet Chart with 30% Benchmark Marker
+  const share = (row.rent * 12 / comparedIncome) * 100;
   $("hitShare").textContent = percentShort(share);
+
+  // The displayed bullet scale spans 0% to 100%
+  // 30% benchmark marker sits exactly at 30% position
+  $("hitShareTarget").style.display = "block";
+  $("hitShareTarget").style.left = "30%";
+
+  if (share > 100) {
+    $("hitShareFill").style.width = "100%";
+  } else {
+    $("hitShareFill").style.width = `${Math.max(0, share).toFixed(1)}%`;
+  }
+
+  $("hitShareBulletWrap").setAttribute(
+    "aria-label",
+    `Median rent is ${percentShort(share)} of your entered income of ${dollars(comparedIncome)}. The standard affordability benchmark is 30%.`
+  );
+}
+
+/* ---------- MAIN IMPROVEMENT 3: Census vs. Zillow Rental Comparison ---------- */
+function updateRentComparisonCard() {
+  if (!data) return;
+  const countyId = $("county").value;
+  const row = latestRowFor(countyId);
+  if (!row) return;
+
+  $("rentCompHeading").textContent = `${row.name} Rental Comparison`;
+  $("compCensusRent").textContent = dollars(row.rent);
+
+  // Baseline scale for visual bars (maximum benchmark $2,800 to keep relative perspective)
+  const maxAxis = 2800;
+  const censusWidth = Math.min(100, (row.rent / maxAxis) * 100);
+  $("compCensusBar").style.width = `${censusWidth.toFixed(1)}%`;
+  $("compCensusDetail").textContent =
+    `Census ACS 5-year median gross rent ($${row.rent_moe ? `±$${Math.round(row.rent_moe)} MOE` : ""}), including tenant-paid utilities.`;
+
+  if (row.market_rent_now) {
+    $("compZillowRent").textContent = dollars(row.market_rent_now);
+    const zillowWidth = Math.min(100, (row.market_rent_now / maxAxis) * 100);
+    $("compZillowBar").style.width = `${zillowWidth.toFixed(1)}%`;
+    $("compZillowBar").style.background = "var(--zillow)";
+    $("compZillowDetail").textContent =
+      "Zillow Observed Rent Index (ZORI) monthly asking rent for available market listings.";
+  } else {
+    $("compZillowRent").textContent = "Not available";
+    $("compZillowBar").style.width = "0%";
+    $("compZillowDetail").textContent =
+      `Zillow does not publish the Rent Index for ${row.name} due to low rental listing volume. Census median rent is shown.`;
+  }
+}
+
+/* ---------- MAIN IMPROVEMENT 1: Statewide Renter Burden Distribution Dot-Plot ---------- */
+function renderBurdenDistribution() {
+  const svg = $("burdenDistributionSvg");
+  if (!svg || !data) return;
+
+  const latestYear = Math.max(...data.metadata.years);
+  const rows = data.rows.filter(r => r.year === latestYear && r.burden_percent !== null);
+  const selectedCountyId = $("county").value;
+
+  // Clear previous SVG contents
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+
+  const width = 960;
+  const height = 140;
+  const padLeft = 40;
+  const padRight = 40;
+  const chartWidth = width - padLeft - padRight;
+  const axisY = 95;
+
+  const minPct = 20;
+  const maxPct = 80;
+  const getX = pct => padLeft + ((pct - minPct) / (maxPct - minPct)) * chartWidth;
+
+  // Background subtle guide lines at 20, 30 (benchmark), 40, 50, 60, 70, 80
+  const ticks = [20, 30, 40, 50, 60, 70, 80];
+  ticks.forEach(t => {
+    const x = getX(t);
+    const isBenchmark = t === 30;
+
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", x);
+    line.setAttribute("x2", x);
+    line.setAttribute("y1", 20);
+    line.setAttribute("y2", axisY + 12);
+    line.setAttribute("stroke", isBenchmark ? "var(--warn)" : "var(--hair)");
+    line.setAttribute("stroke-width", isBenchmark ? "1.5" : "1");
+    if (isBenchmark) line.setAttribute("stroke-dasharray", "3 3");
+    svg.appendChild(line);
+
+    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    label.setAttribute("x", x);
+    label.setAttribute("y", axisY + 26);
+    label.setAttribute("text-anchor", "middle");
+    label.setAttribute("font-family", "var(--f-mono)");
+    label.setAttribute("font-size", isBenchmark ? "11" : "10");
+    label.setAttribute("font-weight", isBenchmark ? "700" : "500");
+    label.setAttribute("fill", isBenchmark ? "var(--warn)" : "var(--muted)");
+    label.textContent = isBenchmark ? "30% benchmark" : `${t}%`;
+    svg.appendChild(label);
+  });
+
+  // Base axis line
+  const baseLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+  baseLine.setAttribute("x1", padLeft);
+  baseLine.setAttribute("x2", width - padRight);
+  baseLine.setAttribute("y1", axisY);
+  baseLine.setAttribute("y2", axisY);
+  baseLine.setAttribute("stroke", "var(--ink-2)");
+  baseLine.setAttribute("stroke-width", "2");
+  svg.appendChild(baseLine);
+
+  // Jitter points vertically slightly to prevent complete overlap
+  // Sort rows by burden
+  const sorted = [...rows].sort((a, b) => a.burden_percent - b.burden_percent);
+  let selectedPointData = null;
+
+  sorted.forEach((r, idx) => {
+    const x = getX(r.burden_percent);
+    // Vertical stagger around y=68
+    const yOffsets = [68, 52, 82, 60, 74];
+    const y = yOffsets[idx % yOffsets.length];
+    const isSelected = r.id === selectedCountyId;
+
+    if (isSelected) {
+      selectedPointData = { r, x, y };
+      return; // Draw selected point last on top
+    }
+
+    const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    group.setAttribute("tabindex", "0");
+    group.setAttribute("role", "button");
+    group.setAttribute("aria-label", `${r.name}: ${percentShort(r.burden_percent)} renter burden`);
+    group.style.cursor = "pointer";
+
+    const title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+    title.textContent = `${r.name}: ${percentShort(r.burden_percent)}`;
+    group.appendChild(title);
+
+    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    circle.setAttribute("cx", x);
+    circle.setAttribute("cy", y);
+    circle.setAttribute("r", "5.5");
+    circle.setAttribute("fill", "var(--accent)");
+    circle.setAttribute("opacity", "0.75");
+    circle.setAttribute("stroke", "var(--land)");
+    circle.setAttribute("stroke-width", "1.5");
+    group.appendChild(circle);
+
+    const selectThisCounty = () => {
+      $("county").value = r.id;
+      renderHistory();
+      updateStatBand();
+      updateRentComparisonCard();
+      renderBurdenDistribution();
+      updateMarylandMap();
+      highlightCountyRow(r.id, { scroll: false });
+    };
+
+    group.addEventListener("click", selectThisCounty);
+    group.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        selectThisCounty();
+      }
+    });
+
+    svg.appendChild(group);
+  });
+
+  // Highlighted Selected County Point
+  if (selectedPointData) {
+    const { r, x, y } = selectedPointData;
+
+    // Drop line to axis
+    const dropLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    dropLine.setAttribute("x1", x);
+    dropLine.setAttribute("x2", x);
+    dropLine.setAttribute("y1", y);
+    dropLine.setAttribute("y2", axisY);
+    dropLine.setAttribute("stroke", "var(--hits-ink)");
+    dropLine.setAttribute("stroke-width", "1.5");
+    dropLine.setAttribute("stroke-dasharray", "2 2");
+    svg.appendChild(dropLine);
+
+    // Callout badge above point
+    const callout = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    const calloutBox = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    const textWidth = Math.max(140, r.name.length * 9 + 44);
+    const boxX = Math.max(padLeft, Math.min(width - padRight - textWidth, x - textWidth / 2));
+
+    calloutBox.setAttribute("x", boxX);
+    calloutBox.setAttribute("y", "6");
+    calloutBox.setAttribute("width", textWidth);
+    calloutBox.setAttribute("height", "32");
+    calloutBox.setAttribute("rx", "6");
+    calloutBox.setAttribute("fill", "#111317");
+    calloutBox.setAttribute("stroke", "#ffffff");
+    calloutBox.setAttribute("stroke-width", "1.5");
+    callout.appendChild(calloutBox);
+
+    const calloutText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    calloutText.setAttribute("x", boxX + textWidth / 2);
+    calloutText.setAttribute("y", "26");
+    calloutText.setAttribute("text-anchor", "middle");
+    calloutText.setAttribute("font-family", "var(--f-display)");
+    calloutText.setAttribute("font-size", "13");
+    calloutText.setAttribute("font-weight", "800");
+    calloutText.setAttribute("fill", "#ffffff");
+    calloutText.textContent = `${r.name}: ${percentShort(r.burden_percent)}`;
+    callout.appendChild(calloutText);
+    svg.appendChild(callout);
+
+    // Outer glow ring
+    const ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    ring.setAttribute("cx", x);
+    ring.setAttribute("cy", y);
+    ring.setAttribute("r", "10");
+    ring.setAttribute("fill", "none");
+    ring.setAttribute("stroke", "var(--hits-border)");
+    ring.setAttribute("stroke-width", "3");
+    svg.appendChild(ring);
+
+    // Center solid circle
+    const center = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    center.setAttribute("cx", x);
+    center.setAttribute("cy", y);
+    center.setAttribute("r", "6");
+    center.setAttribute("fill", "var(--hits-ink)");
+    center.setAttribute("stroke", "#ffffff");
+    center.setAttribute("stroke-width", "2");
+    svg.appendChild(center);
+
+    $("chartSummaryLine").textContent =
+      `Selected: ${r.name} (${percentShort(r.burden_percent)} of surveyed renter households spending 30%+ on gross rent). Click any dot on the chart to inspect another county.`;
+  }
+}
+
+/* ---------- INTERACTIVE GEOGRAPHICAL MAP DATA VISUALIZATION ---------- */
+let mapPathsData = null;
+let currentMapMetric = "burden_percent";
+
+const MAP_METRICS = {
+  burden_percent: {
+    label: "Renter Cost Burden (% spending 30%+ of income on gross rent)",
+    shortLabel: "Renter Burden",
+    unit: "%",
+    formatter: v => (v !== null && Number.isFinite(v) ? `${v.toFixed(1)}%` : "N/A"),
+    higherIsBurden: true,
+    palette: [
+      { stop: 0.0, color: "#d1fae5" }, // ~35%
+      { stop: 0.25, color: "#fef08a" },
+      { stop: 0.5, color: "#fed7aa" },
+      { stop: 0.75, color: "#fb923c" },
+      { stop: 1.0, color: "#dc2626" }
+    ],
+    getValue: row => row.burden_percent
+  },
+  rent: {
+    label: "Census Median Gross Rent ($/month, includes utilities)",
+    shortLabel: "Median Rent",
+    unit: "$",
+    formatter: v => dollars(v),
+    higherIsBurden: true,
+    palette: [
+      { stop: 0.0, color: "#e0f2fe" },
+      { stop: 0.25, color: "#bae6fd" },
+      { stop: 0.5, color: "#38bdf8" },
+      { stop: 0.75, color: "#0284c7" },
+      { stop: 1.0, color: "#0369a1" }
+    ],
+    getValue: row => row.rent
+  },
+  market_rent_now: {
+    label: "Zillow Current Asking Rent (ZORI Monthly Index)",
+    shortLabel: "Market Rent",
+    unit: "$",
+    formatter: v => (v !== null && Number.isFinite(v) ? dollars(v) : "No listings"),
+    higherIsBurden: true,
+    palette: [
+      { stop: 0.0, color: "#ccfbf1" },
+      { stop: 0.25, color: "#5eead4" },
+      { stop: 0.5, color: "#14b8a6" },
+      { stop: 0.75, color: "#0f766e" },
+      { stop: 1.0, color: "#115e59" }
+    ],
+    getValue: row => row.market_rent_now
+  },
+  share: {
+    label: "Median Rent as Share of Your Household Income (%)",
+    shortLabel: "Your Rent Share",
+    unit: "%",
+    formatter: v => (v !== null && Number.isFinite(v) ? `${v.toFixed(1)}%` : "Enter income"),
+    higherIsBurden: true,
+    palette: [
+      { stop: 0.0, color: "#86efac" },
+      { stop: 0.3, color: "#fde047" },
+      { stop: 0.5, color: "#fb923c" },
+      { stop: 0.75, color: "#f87171" },
+      { stop: 1.0, color: "#b91c1c" }
+    ],
+    getValue: row => {
+      if (comparedIncome === null || comparedIncome <= 0 || row.rent === null) return null;
+      return (row.rent * 12 / comparedIncome) * 100;
+    }
+  },
+  renter_income: {
+    label: "Renter Household Median Income ($/year, ACS Table B25119)",
+    shortLabel: "Renter Income",
+    unit: "$",
+    formatter: v => dollars(v),
+    higherIsBurden: false,
+    palette: [
+      { stop: 0.0, color: "#fef3c7" },
+      { stop: 0.25, color: "#a7f3d0" },
+      { stop: 0.5, color: "#34d399" },
+      { stop: 0.75, color: "#059669" },
+      { stop: 1.0, color: "#064e3b" }
+    ],
+    getValue: row => row.renter_income
+  }
+};
+
+function hexToRgb(hex) {
+  const cleanHex = hex.replace("#", "");
+  const bigint = parseInt(cleanHex, 16);
+  return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
+}
+
+function rgbToHex(r, g, b) {
+  return "#" + [r, g, b].map(x => Math.round(Math.max(0, Math.min(255, x))).toString(16).padStart(2, "0")).join("");
+}
+
+function interpolateHex(colorA, colorB, t) {
+  const [r1, g1, b1] = hexToRgb(colorA);
+  const [r2, g2, b2] = hexToRgb(colorB);
+  return rgbToHex(r1 + (r2 - r1) * t, g1 + (g2 - g1) * t, b1 + (b2 - b1) * t);
+}
+
+function getColorForNormalizedValue(valNormalized, palette) {
+  if (valNormalized <= 0) return palette[0].color;
+  if (valNormalized >= 1) return palette[palette.length - 1].color;
+  for (let i = 0; i < palette.length - 1; i++) {
+    const s1 = palette[i];
+    const s2 = palette[i + 1];
+    if (valNormalized >= s1.stop && valNormalized <= s2.stop) {
+      const segT = (valNormalized - s1.stop) / (s2.stop - s1.stop);
+      return interpolateHex(s1.color, s2.color, segT);
+    }
+  }
+  return palette[palette.length - 1].color;
+}
+
+function selectCountyFromMap(countyId) {
+  if (!countyId) return;
+  $("county").value = countyId;
+  renderHistory();
+  updateStatBand();
+  updateRentComparisonCard();
+  renderBurdenDistribution();
+  updateMarylandMap();
+  highlightCountyRow(countyId, { scroll: false });
+}
+
+function updateMapInspector(countyId) {
+  if (!data) return;
+  const row = latestRowFor(countyId);
+  if (!row) return;
+
+  const isSelected = row.id === $("county").value;
+  $("inspStatusTag").textContent = isSelected ? "Selected County" : "Inspected County";
+  $("inspStatusTag").style.background = isSelected ? "var(--hits-bg)" : "var(--hair)";
+  $("inspStatusTag").style.color = isSelected ? "var(--hits-ink)" : "var(--ink)";
+  $("inspCountyName").textContent = row.name;
+
+  if (row.burden_percent !== null && Number.isFinite(row.burden_percent)) {
+    $("inspSummaryText").textContent =
+      `${row.name}: ${row.burden_percent.toFixed(1)}% of surveyed renter households pay 30% or more of income on gross rent.`;
+    $("inspBurden").textContent = `${row.burden_percent.toFixed(1)}%`;
+  } else {
+    $("inspSummaryText").textContent = `${row.name}: Data not available in current survey window.`;
+    $("inspBurden").textContent = "—";
+  }
+
+  const latestYear = Math.max(...data.metadata.years);
+  const latestRows = data.rows.filter(r => r.year === latestYear);
+  const sortedBurden = [...latestRows]
+    .filter(r => r.burden_percent !== null)
+    .sort((a, b) => b.burden_percent - a.burden_percent);
+  const burdenRank = sortedBurden.findIndex(r => r.id === row.id) + 1;
+  $("inspBurdenRank").textContent = burdenRank > 0 ? `Rank #${burdenRank} of 24 (highest burden)` : "—";
+
+  $("inspCensusRent").textContent = dollars(row.rent);
+  $("inspRentMoe").textContent = row.rent_moe ? `±$${Math.round(row.rent_moe)} MOE` : "—";
+
+  if (row.market_rent_now) {
+    $("inspMarketRent").textContent = dollars(row.market_rent_now);
+  } else {
+    $("inspMarketRent").textContent = "Not available";
+  }
+
+  if (comparedIncome && comparedIncome > 0 && row.rent) {
+    const shareVal = (row.rent * 12 / comparedIncome) * 100;
+    $("inspShare").textContent = `${shareVal.toFixed(1)}%`;
+    if (shareVal <= 30) {
+      $("inspShareAfford").textContent = "Affordable (under 30%)";
+      $("inspShareAfford").style.color = "#15803d";
+    } else if (shareVal <= 40) {
+      $("inspShareAfford").textContent = "Moderately cost burdened";
+      $("inspShareAfford").style.color = "#b45309";
+    } else {
+      $("inspShareAfford").textContent = "Severely cost burdened (>40%)";
+      $("inspShareAfford").style.color = "#b91c1c";
+    }
+  } else {
+    $("inspShare").textContent = "—";
+    $("inspShareAfford").textContent = "Enter your income above";
+    $("inspShareAfford").style.color = "var(--ink-2)";
+  }
+}
+
+async function initMarylandMap() {
+  const mapSvg = $("marylandMapSvg");
+  const countiesGroup = $("mapCountiesGroup");
+  const labelsGroup = $("mapLabelsGroup");
+  const tooltip = $("mapTooltip");
+  const svgWrap = $("mapSvgWrap");
+
+  if (!mapSvg || !countiesGroup) return;
+
+  // Load vector paths if not loaded
+  if (!mapPathsData) {
+    try {
+      const res = await fetch("maryland-map-paths.json", { cache: "no-cache" });
+      if (res.ok) {
+        mapPathsData = await res.json();
+      }
+    } catch (err) {
+      console.warn("Could not load maryland-map-paths.json:", err);
+      return;
+    }
+  }
+
+  if (!mapPathsData) return;
+
+  // Clear previous elements
+  while (countiesGroup.firstChild) countiesGroup.removeChild(countiesGroup.firstChild);
+  while (labelsGroup.firstChild) labelsGroup.removeChild(labelsGroup.firstChild);
+
+  // Render order: ensure Baltimore County (24005) is drawn BEFORE Baltimore City (24510)
+  const fipsKeys = Object.keys(mapPathsData).sort((a, b) => {
+    if (a === "24510") return 1;
+    if (b === "24510") return -1;
+    return 0;
+  });
+
+  fipsKeys.forEach(fips => {
+    const item = mapPathsData[fips];
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", item.path);
+    path.setAttribute("id", `mapCounty_${fips}`);
+    path.setAttribute("data-fips", fips);
+    path.setAttribute("class", "county-path");
+    path.setAttribute("tabindex", "0");
+    path.setAttribute("role", "button");
+
+    path.addEventListener("click", () => {
+      selectCountyFromMap(fips);
+    });
+
+    path.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        selectCountyFromMap(fips);
+      }
+    });
+
+    path.addEventListener("mouseenter", e => {
+      updateMapInspector(fips);
+      showMapTooltip(fips, e);
+    });
+
+    path.addEventListener("mousemove", e => {
+      positionMapTooltip(e);
+    });
+
+    path.addEventListener("mouseleave", () => {
+      hideMapTooltip();
+      updateMapInspector($("county").value);
+    });
+
+    path.addEventListener("focus", e => {
+      updateMapInspector(fips);
+      showMapTooltip(fips, e, item.cx, item.cy);
+    });
+
+    path.addEventListener("blur", () => {
+      hideMapTooltip();
+      updateMapInspector($("county").value);
+    });
+
+    countiesGroup.appendChild(path);
+  });
+
+  // Geographic regional labels
+  // County labels group left empty so map shapes and choropleth colors remain pristine, clean, and legible
+  while (labelsGroup.firstChild) labelsGroup.removeChild(labelsGroup.firstChild);
+
+  // Metric Toggle Buttons
+  const buttons = document.querySelectorAll(".map-metric-btn");
+  buttons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      buttons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentMapMetric = btn.dataset.metric;
+      updateMarylandMap();
+    });
+  });
+
+  // Mousemove for tooltip
+  if (svgWrap) {
+    svgWrap.addEventListener("mousemove", e => {
+      if (tooltip && !tooltip.hidden) {
+        positionMapTooltip(e);
+      }
+    });
+  }
+
+  // Initial update
+  updateMarylandMap();
+}
+
+function showMapTooltip(fips, mouseEvent, fallbackX, fallbackY) {
+  const tooltip = $("mapTooltip");
+  if (!tooltip || !data) return;
+
+  const row = latestRowFor(fips);
+  if (!row) return;
+
+  const metricDef = MAP_METRICS[currentMapMetric] || MAP_METRICS.burden_percent;
+  const val = metricDef.getValue(row);
+
+  // Compute statewide rank for this metric
+  const latestYear = Math.max(...data.metadata.years);
+  const latestRows = data.rows.filter(r => r.year === latestYear);
+  const rowsWithVal = latestRows
+    .map(r => ({ id: r.id, v: metricDef.getValue(r) }))
+    .filter(item => item.v !== null && Number.isFinite(item.v));
+
+  rowsWithVal.sort((a, b) => metricDef.higherIsBurden ? b.v - a.v : b.v - a.v);
+  const rank = rowsWithVal.findIndex(item => item.id === fips) + 1;
+
+  $("tipCountyName").textContent = row.name;
+  $("tipCountyRank").textContent = rank > 0 ? `#${rank} of ${rowsWithVal.length}` : "—";
+  $("tipPrimaryVal").textContent = metricDef.formatter(val);
+
+  if (currentMapMetric === "burden_percent") {
+    $("tipSecondaryVal").textContent = "Benchmark: 30% or less";
+  } else if (currentMapMetric === "rent") {
+    $("tipSecondaryVal").textContent = row.rent_moe ? `ACS MOE: ±$${Math.round(row.rent_moe)}` : "";
+  } else if (currentMapMetric === "market_rent_now") {
+    $("tipSecondaryVal").textContent = "Zillow Asking Rent Index";
+  } else if (currentMapMetric === "share") {
+    $("tipSecondaryVal").textContent = comparedIncome ? `Income: ${dollars(comparedIncome)}` : "Set your income";
+  } else {
+    $("tipSecondaryVal").textContent = "ACS Table B25119";
+  }
+
+  tooltip.hidden = false;
+  if (mouseEvent) {
+    positionMapTooltip(mouseEvent);
+  } else if (fallbackX !== undefined && fallbackY !== undefined) {
+    const wrap = $("mapSvgWrap");
+    const svg = $("marylandMapSvg");
+    if (wrap && svg) {
+      const rect = svg.getBoundingClientRect();
+      const wrapRect = wrap.getBoundingClientRect();
+      const scaleX = rect.width / 960;
+      const scaleY = rect.height / 520;
+      const screenX = (rect.left - wrapRect.left) + fallbackX * scaleX;
+      const screenY = (rect.top - wrapRect.top) + fallbackY * scaleY;
+      applyTooltipPosition(screenX, screenY);
+    }
+  }
+}
+
+function applyTooltipPosition(x, y) {
+  const tooltip = $("mapTooltip");
+  const wrap = $("mapSvgWrap");
+  if (!tooltip || !wrap) return;
+
+  const wrapRect = wrap.getBoundingClientRect();
+  const tipW = tooltip.offsetWidth || 230;
+  const tipH = tooltip.offsetHeight || 115;
+
+  // Horizontal clamping: keep at least 10px inside the container boundaries
+  let targetLeft = x - tipW / 2;
+  const minLeft = 10;
+  const maxLeft = Math.max(minLeft, wrapRect.width - tipW - 10);
+  if (targetLeft < minLeft) targetLeft = minLeft;
+  if (targetLeft > maxLeft) targetLeft = maxLeft;
+
+  // Vertical placement:
+  // When hovering near top corners or edges (e.g. Garrett, Allegany, Washington, Carroll, Cecil),
+  // there isn't enough space above the cursor without clipping, so flip downwards below cursor.
+  let targetTop = y - tipH - 14;
+  if (targetTop < 8) {
+    targetTop = y + 20; // flip cleanly below the cursor
+  }
+  // Guard against bottom edge spillover
+  if (targetTop + tipH > wrapRect.height - 8) {
+    targetTop = Math.max(8, wrapRect.height - tipH - 8);
+  }
+
+  tooltip.style.left = `${Math.round(targetLeft)}px`;
+  tooltip.style.top = `${Math.round(targetTop)}px`;
+  tooltip.style.transform = "none";
+}
+
+function positionMapTooltip(e) {
+  const wrap = $("mapSvgWrap");
+  if (!wrap) return;
+
+  const rect = wrap.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  applyTooltipPosition(x, y);
+}
+
+function hideMapTooltip() {
+  const tooltip = $("mapTooltip");
+  if (tooltip) tooltip.hidden = true;
+}
+
+function updateMarylandMap() {
+  if (!data || !mapPathsData) return;
+
+  const metricDef = MAP_METRICS[currentMapMetric] || MAP_METRICS.burden_percent;
+  const latestYear = Math.max(...data.metadata.years);
+  const latestRows = data.rows.filter(r => r.year === latestYear);
+  const selectedCountyId = $("county").value;
+
+  // Collect valid values
+  const values = [];
+  const countyValMap = {};
+
+  latestRows.forEach(row => {
+    const val = metricDef.getValue(row);
+    countyValMap[row.id] = val;
+    if (val !== null && Number.isFinite(val)) {
+      values.push(val);
+    }
+  });
+
+  if (values.length === 0) return;
+
+  const minVal = Math.min(...values);
+  const maxVal = Math.max(...values);
+  const sortedVals = [...values].sort((a, b) => a - b);
+  const midVal = sortedVals[Math.floor(sortedVals.length / 2)];
+  const avgVal = values.reduce((sum, v) => sum + v, 0) / values.length;
+
+  // Update County Paths Fill and ARIA
+  Object.keys(mapPathsData).forEach(fips => {
+    const path = $(`mapCounty_${fips}`);
+    if (!path) return;
+
+    const row = latestRows.find(r => r.id === fips);
+    const val = countyValMap[fips];
+    const isSelected = fips === selectedCountyId;
+
+    if (val === null || !Number.isFinite(val)) {
+      path.setAttribute("fill", "url(#diagonalHatch)");
+    } else {
+      const norm = maxVal === minVal ? 0.5 : (val - minVal) / (maxVal - minVal);
+      const color = getColorForNormalizedValue(norm, metricDef.palette);
+      path.setAttribute("fill", color);
+    }
+
+    if (isSelected) {
+      path.classList.add("selected");
+    } else {
+      path.classList.remove("selected");
+    }
+
+    const cName = row ? row.name : mapPathsData[fips].name;
+    const valText = metricDef.formatter(val);
+    path.setAttribute(
+      "aria-label",
+      `${cName}: ${valText} (${metricDef.shortLabel}). ${isSelected ? "Currently selected." : "Click to select."}`
+    );
+  });
+
+  // Update Selected Badge in Header
+  const selectedRow = latestRowFor(selectedCountyId);
+  if (selectedRow) {
+    $("mapSelectedBadgeName").textContent = selectedRow.name;
+  }
+
+  // Update Selection Marker in SVG
+  const selectionGroup = $("mapSelectionGroup");
+  if (selectionGroup) {
+    while (selectionGroup.firstChild) selectionGroup.removeChild(selectionGroup.firstChild);
+
+    if (mapPathsData[selectedCountyId]) {
+      const { cx, cy } = mapPathsData[selectedCountyId];
+
+      const pulseRing = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      pulseRing.setAttribute("cx", cx);
+      pulseRing.setAttribute("cy", cy);
+      pulseRing.setAttribute("r", "15");
+      pulseRing.setAttribute("fill", "none");
+      pulseRing.setAttribute("stroke", "var(--hits-bg)");
+      pulseRing.setAttribute("stroke-width", "4");
+      pulseRing.setAttribute("opacity", "0.95");
+      selectionGroup.appendChild(pulseRing);
+
+      const centerDot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      centerDot.setAttribute("cx", cx);
+      centerDot.setAttribute("cy", cy);
+      centerDot.setAttribute("r", "5.5");
+      centerDot.setAttribute("fill", "#000000");
+      centerDot.setAttribute("stroke", "#ffffff");
+      centerDot.setAttribute("stroke-width", "2");
+      selectionGroup.appendChild(centerDot);
+    }
+  }
+
+  // Update Legend
+  $("legendMetricLabel").textContent = metricDef.label;
+  $("legendStateAvg").textContent = `MD State Average: ${metricDef.formatter(avgVal)}`;
+
+  const gradientStops = metricDef.palette
+    .map(p => `${p.color} ${(p.stop * 100).toFixed(0)}%`)
+    .join(", ");
+  $("legendGradientTrack").style.background = `linear-gradient(to right, ${gradientStops})`;
+
+  $("legendMin").textContent = `Min: ${metricDef.formatter(minVal)}`;
+  $("legendMid").textContent = `Median: ${metricDef.formatter(midVal)}`;
+  $("legendMax").textContent = `Max: ${metricDef.formatter(maxVal)}`;
+
+  // Update bottom inspector
+  updateMapInspector(selectedCountyId);
 }
 
 /* ---------- Row highlight ---------- */
@@ -224,10 +996,7 @@ function highlightCountyRow(countyId, { scroll = true } = {}) {
 
 /* ---------- County table ---------- */
 function renderIncomeTable() {
-  if (!data) {
-    $("tableNote").textContent = "The county estimates are still loading.";
-    return;
-  }
+  if (!data) return;
 
   const latestYear = Math.max(...data.metadata.years);
   const latestRows = data.rows.filter(row => row.year === latestYear);
@@ -238,7 +1007,7 @@ function renderIncomeTable() {
   sorted.forEach(row => {
     const incomeShare = comparedIncome === null
       ? null
-      : row.rent * 12 / comparedIncome * 100;
+      : (row.rent * 12 / comparedIncome) * 100;
 
     addTableRow(
       $("counties"),
@@ -247,20 +1016,16 @@ function renderIncomeTable() {
         dollars(row.rent),
         dollars(row.rent_moe),
         row.market_rent_now ? dollars(row.market_rent_now) : "—",
-        dollars(row.rent * 12 / 0.30),
+        dollars((row.rent * 12) / 0.30),
         incomeShare === null ? "Not calculated" : percentShort(incomeShare),
         percentShort(row.burden_percent)
       ],
       { countyId: row.id }
     );
   });
-
-  $("tableNote").textContent = comparedIncome === null
-    ? "Enter your income and press Compare to calculate the personal column."
-    : `Using a yearly household income of ${dollars(comparedIncome)}.`;
 }
 
-/* ---------- Trend cards ---------- */
+/* ---------- MAIN IMPROVEMENT 2: Historical Trend Cards with Distinct Measures ---------- */
 function renderTrendCards(history) {
   const container = $("trendCards");
   if (!container) return;
@@ -269,10 +1034,10 @@ function renderTrendCards(history) {
   if (history.length === 0) return;
 
   const metrics = [
-    { key: "rent", label: "Median monthly gross rent" },
-    { key: "income", label: "Median yearly household income (all households)" },
-    { key: "renter_income", label: "Median yearly renter household income" },
-    { key: "home_value", label: "Median owner occupied home value" }
+    { key: "rent", label: "Median monthly gross rent (Census ACS)", unit: "monthly" },
+    { key: "income", label: "Median household income, all households", unit: "annual" },
+    { key: "renter_income", label: "Median renter household income", unit: "annual" },
+    { key: "home_value", label: "Median owner occupied home value", unit: "value" }
   ];
 
   metrics.forEach(metric => {
@@ -303,7 +1068,7 @@ function renderTrendCards(history) {
 
       const col = document.createElement("div");
       col.className = "col";
-      col.style.height = v == null ? "0%" : `${(v / maxV * 100).toFixed(1)}%`;
+      col.style.height = v == null ? "0%" : `${Math.max(4, (v / maxV) * 100).toFixed(1)}%`;
       colWrap.append(col);
 
       const label = document.createElement("span");
@@ -319,12 +1084,12 @@ function renderTrendCards(history) {
     const last = values[values.length - 1];
     if (first > 0 && last > 0) {
       const deltaDollar = last - first;
-      const deltaPct = (last / first - 1) * 100;
+      const deltaPct = ((last / first) - 1) * 100;
       const sign = deltaDollar >= 0 ? "+" : "−";
       const change = document.createElement("p");
       change.className = "trend-change";
       change.innerHTML =
-        `<b>${sign}${dollars(Math.abs(deltaDollar))}</b> · ${percentShort(Math.abs(deltaPct))}`;
+        `Nominal change: <b>${sign}${dollars(Math.abs(deltaDollar))}</b> (${percentShort(Math.abs(deltaPct))})`;
       card.append(change);
     }
 
@@ -362,26 +1127,25 @@ function renderBurdenStory() {
 
   let comparison;
   if (row.id === min.id) {
-    comparison = `${row.name} has the <b>lowest</b> renter burden in the state.`;
+    comparison = `${row.name} has the <b>lowest</b> estimated renter burden in the state.`;
   } else if (row.id === max.id) {
-    comparison = `${row.name} has the <b>highest</b> renter burden in the state.`;
+    comparison = `${row.name} has the <b>highest</b> estimated renter burden in the state.`;
   } else {
     const above = burdens.filter(b => b.value < row.burden_percent).length;
-    comparison = `${row.name} ranks <b>${above + 1} of ${burdens.length}</b> counties by renter burden, from lowest to highest.`;
+    comparison = `${row.name} ranks <b>${above + 1} of ${burdens.length}</b> Maryland jurisdictions by point estimate.`;
   }
 
   let renterIncomeLine = "";
   if (row.renter_income != null && row.income != null) {
     const gap = row.income - row.renter_income;
     const gapPct = (gap / row.income) * 100;
-    renterIncomeLine = `<p>Renter household income is <b>${dollars(row.renter_income)}</b>, about <b>${percentShort(gapPct)}</b> below the all-household median of ${dollars(row.income)}.</p>`;
+    renterIncomeLine = `<p>Renter household median income is <b>${dollars(row.renter_income)}</b>, about <b>${percentShort(gapPct)}</b> below the all-household median of ${dollars(row.income)}.</p>`;
   }
 
   story.innerHTML = `
-    <h3>Renter burden in ${row.name}</h3>
+    <h3>Renter cost burden in ${row.name}</h3>
     <p class="hook">
-      <b>${householdsPerTen} in 10</b> renter households here spend
-      30% or more of income on rent.
+      About <b>${householdsPerTen} in 10</b> surveyed renter households here spend 30% or more of income on rent.
     </p>
     <div class="burden-range" role="img"
          aria-label="Renter burden in ${row.name}: ${percentShort(row.burden_percent)}. Maryland range: ${percentShort(min.value)} to ${percentShort(max.value)}.">
@@ -395,8 +1159,7 @@ function renderBurdenStory() {
     <p>${comparison}</p>
     ${renterIncomeLine}
     <p style="font-size:0.78rem;opacity:0.75;margin-top:0.5rem;">
-      Renter burden comes from ACS table B25070 and describes surveyed
-      renter households. Renter income comes from B25119.
+      Renter burden comes from ACS table B25070 for households where rent-to-income ratio is calculated. Renter income comes from B25119.
     </p>
   `;
   story.hidden = false;
@@ -440,7 +1203,7 @@ function renderHistory() {
   renderBurdenStory();
 }
 
-/* ---------- Rent scenario ---------- */
+/* ---------- Rent scenario calculator ---------- */
 function calculateRentScenario() {
   const income = readNumber("income");
   const startingRent = readNumber("startRent");
@@ -465,8 +1228,8 @@ function calculateRentScenario() {
 
   const futureRent = startingRent * Math.pow(1 + rentGrowth / 100, years);
   const futureIncome = income * Math.pow(1 + incomeGrowth / 100, years);
-  const startingShare = startingRent * 12 / income * 100;
-  const futureShare = futureRent * 12 / futureIncome * 100;
+  const startingShare = (startingRent * 12 / income) * 100;
+  const futureShare = (futureRent * 12 / futureIncome) * 100;
 
   addResultLine(result, `After ${years} ${years === 1 ? "year" : "years"}:`);
   addResultLine(result,
@@ -475,10 +1238,10 @@ function calculateRentScenario() {
     `Yearly income: ${dollars(income)} → about ${dollars(futureIncome)}.`);
   addResultLine(result,
     `Rent share of income: ${percent(startingShare)} → ${percent(futureShare)}.`);
-  addResultLine(result, "Assumes the same growth rates apply every year.");
+  addResultLine(result, "Assumes the same constant growth rate applies every year.");
 }
 
-/* ---------- Mortgage ---------- */
+/* ---------- Mortgage calculator ---------- */
 function calculateMortgage() {
   const fieldIds = [
     "price", "down", "interest", "term",
@@ -499,17 +1262,17 @@ function calculateMortgage() {
     tax, insurance, hoa, maintenance, mortgageInsurance
   ] = values;
 
-  const downPayment = price * downPercent / 100;
+  const downPayment = (price * downPercent) / 100;
   const principal = price - downPayment;
   const monthlyRate = yearlyInterest / 1200;
   const paymentCount = termYears * 12;
 
   let principalAndInterest;
   if (monthlyRate === 0) {
-    principalAndInterest = principal / paymentCount;
+    principalAndInterest = paymentCount > 0 ? principal / paymentCount : 0;
   } else {
     principalAndInterest =
-      principal * monthlyRate /
+      (principal * monthlyRate) /
       (1 - Math.pow(1 + monthlyRate, -paymentCount));
   }
 
@@ -540,7 +1303,7 @@ function calculateMortgage() {
   }
 }
 
-/* ---------- Validation ---------- */
+/* ---------- Data validation ---------- */
 function validateData(payload) {
   if (!payload || !payload.metadata ||
       !Array.isArray(payload.metadata.years) ||
@@ -578,7 +1341,7 @@ function currentShareUrl() {
 
 function buildShareLinks() {
   const url = currentShareUrl();
-  const text = `${SITE_TITLE} — ${SITE_BLURB}`;
+  const text = `${SITE_TITLE}: ${SITE_BLURB}`;
   const fullText = `${text}\n${url}`;
   const encodedUrl = encodeURIComponent(url);
   const encodedText = encodeURIComponent(text);
@@ -678,7 +1441,7 @@ $("shareMenu").addEventListener("click", event => {
   }
 
   copyShareUrl().then(ok => {
-    if (ok) showToast("Link copied — paste into the share window");
+    if (ok) showToast("Link copied: paste into the share window");
   });
   closeShareMenu();
 });
@@ -693,11 +1456,26 @@ document.addEventListener("keydown", event => {
   if (event.key === "Escape") closeShareMenu();
 });
 
-/* Sortable headers */
+/* Sortable table headers */
 document.querySelectorAll("#countiesTable thead th[data-sort]").forEach(th => {
   const btn = th.querySelector(".th-sort");
   if (!btn) return;
   btn.addEventListener("click", () => handleSortClick(th.dataset.sort));
+});
+
+/* Clicking table rows */
+$("counties").addEventListener("click", event => {
+  const tr = event.target.closest("tr[data-county-id]");
+  if (!tr) return;
+  const countyId = tr.dataset.countyId;
+  if (!countyId) return;
+  $("county").value = countyId;
+  renderHistory();
+  updateStatBand();
+  updateRentComparisonCard();
+  renderBurdenDistribution();
+  updateMarylandMap();
+  highlightCountyRow(countyId, { scroll: false });
 });
 
 $("incomeForm").addEventListener("submit", event => {
@@ -706,25 +1484,27 @@ $("incomeForm").addEventListener("submit", event => {
   renderIncomeTable();
   updateStatBand();
   updateScenarioIncomeLabel();
+  updateMarylandMap();
   markResultAsNeedingUpdate(
     "rentResult",
-    "Income changed. Press Calculate rent scenario to refresh."
+    "Income updated. Press Calculate rent scenario to refresh."
   );
 });
 
 $("income").addEventListener("input", () => {
   updateScenarioIncomeLabel();
-  $("tableNote").textContent =
-    "Income edited. Press Compare to update the table.";
   markResultAsNeedingUpdate(
     "rentResult",
-    "Income changed. Press Calculate rent scenario to refresh."
+    "Income edited. Press Calculate rent scenario to refresh."
   );
 });
 
 $("county").addEventListener("change", () => {
   renderHistory();
   updateStatBand();
+  updateRentComparisonCard();
+  renderBurdenDistribution();
+  updateMarylandMap();
   highlightCountyRow($("county").value, { scroll: false });
 });
 
@@ -786,7 +1566,7 @@ async function start() {
     const countyExists = Array.from($("county").options)
       .some(option => option.value === requestedCounty);
 
-    if (countyExists) $("county").value = requestedCounty;
+    if (requestedCounty && countyExists) $("county").value = requestedCounty;
 
     const refreshDate = new Date(
       data.metadata.fetched_at
@@ -804,6 +1584,9 @@ async function start() {
     renderIncomeTable();
     renderHistory();
     updateStatBand();
+    updateRentComparisonCard();
+    renderBurdenDistribution();
+    await initMarylandMap();
 
     if (requestedCounty && countyExists) {
       requestAnimationFrame(() => {
@@ -811,11 +1594,10 @@ async function start() {
       });
     }
   } catch (error) {
+    console.error("Boot error:", error);
     data = null;
     $("status").textContent =
-      "Data failed to load. Check that data.json exists in docs/ and open via a local web server.";
-    $("tableNote").textContent =
-      "County comparisons are unavailable until the data loads. The calculators still work.";
+      "Data failed to load. Check that data.json exists and open via a web server.";
   }
 }
 

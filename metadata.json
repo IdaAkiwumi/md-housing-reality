@@ -1,0 +1,8 @@
+{
+  "name": "Maryland Housing Burden",
+  "description": "Compare median rent, median income, renter income, and renter rent burden across all 24 Maryland counties. Free, updated monthly with Census ACS and Zillow ZORI data.",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ],
+  "permissions": []
+}

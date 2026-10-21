@@ -7,13 +7,21 @@
   --hair: #dcdde1;
   --accent: #2d4a8a;
   --accent-ink: #ffffff;
+  --accent-soft: #e2e8f5;
   --warn: #a21caf;
+  --warn-bg: #fae8ff;
   --good: #15803d;
+  --zillow: #006aff;
+  --zillow-bg: #e5f0ff;
 
-  --hits-bg: #fbbf24;
-  --hits-border: #f59e0b;
+  --hits-bg: #fde047;
+  --hits-border: #eab308;
   --hits-ink: #1c1917;
-  --hits-muted: #451a03;
+  --hits-muted: #000000;
+  --hits-track: rgba(0, 0, 0, 0.16);
+  --hits-fill: #1c1917;
+  --hits-accent: #713f12;
+  --hits-badge-bg: rgba(0, 0, 0, 0.10);
 
   --f-display: "Bricolage Grotesque", "Inter", "Helvetica Neue", Arial, sans-serif;
   --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -30,7 +38,21 @@
     --hair: #2c2e34;
     --accent: #7ba7f0;
     --accent-ink: #0b0c0f;
+    --accent-soft: #1e293b;
     --warn: #e879f9;
+    --warn-bg: #3b0764;
+    --good: #22c55e;
+    --zillow: #38bdf8;
+    --zillow-bg: #082f49;
+
+    --hits-bg: #eab308;
+    --hits-border: #ca8a04;
+    --hits-ink: #1c1917;
+    --hits-muted: #000000;
+    --hits-track: rgba(0, 0, 0, 0.20);
+    --hits-fill: #1c1917;
+    --hits-accent: #713f12;
+    --hits-badge-bg: rgba(0, 0, 0, 0.20);
     color-scheme: dark;
   }
 }
@@ -266,10 +288,7 @@ a:focus-visible,
   font-size: 0.72rem;
 }
 
-/* ---------- Stat band ----------
-   Explicit 7-column grid eliminates the auto-fit phantom track
-   that was leaving empty space after the last tile. Gap bumped
-   to 2rem so the pipe has 1rem of clear space on each side. */
+/* ---------- YELLOW SUMMARY BAR WITH TWO PURPOSEFUL MICROCHARTS ---------- */
 .hits {
   position: relative;
   background: var(--hits-bg);
@@ -279,17 +298,17 @@ a:focus-visible,
   padding: 1.2rem 1.3rem 1.3rem;
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 1rem 2rem;
+  gap: 1.2rem 1.6rem;
   margin-bottom: 1.6rem;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1040px) {
   .hits {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .hits {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1rem;
@@ -304,24 +323,25 @@ a:focus-visible,
   gap: 0.55rem;
   padding-bottom: 0.7rem;
   padding-right: 2rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--hits-ink) 18%, transparent);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
   margin-bottom: 0.2rem;
 }
 
 .hits-header .eyebrow {
-  color: var(--hits-muted);
-  opacity: 0.9;
+  color: #000000 !important;
+  font-weight: 800;
+  font-size: 0.88rem;
+  opacity: 1;
 }
 
 .hits-header b {
-  font-size: 1.15rem;
+  font-size: 1.45rem;
   font-weight: 800;
-  color: var(--hits-ink);
+  color: #000000 !important;
   letter-spacing: -0.015em;
   line-height: 1.1;
 }
 
-/* Info icon in top-right corner of amber band */
 .info-wrap {
   position: absolute;
   top: 0.9rem;
@@ -335,25 +355,25 @@ a:focus-visible,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.15rem;
-  height: 1.15rem;
+  width: 1.2rem;
+  height: 1.2rem;
   border-radius: 50%;
   font-family: var(--f-mono);
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1;
-  color: var(--hits-ink);
-  background: color-mix(in srgb, var(--hits-ink) 14%, transparent);
-  border: 1px solid color-mix(in srgb, var(--hits-ink) 35%, transparent);
+  color: #000000;
+  background: color-mix(in srgb, #000000 14%, transparent);
+  border: 1px solid color-mix(in srgb, #000000 35%, transparent);
   cursor: help;
   user-select: none;
   transition: background-color 0.15s, border-color 0.15s;
 }
 .info-icon:hover,
 .info-icon:focus-visible {
-  background: color-mix(in srgb, var(--hits-ink) 24%, transparent);
-  border-color: color-mix(in srgb, var(--hits-ink) 65%, transparent);
-  outline: 2px solid var(--hits-ink);
+  background: color-mix(in srgb, #000000 24%, transparent);
+  border-color: color-mix(in srgb, #000000 65%, transparent);
+  outline: 2px solid #000000;
   outline-offset: 2px;
 }
 
@@ -364,7 +384,7 @@ a:focus-visible,
   right: 0;
   z-index: 101;
   width: max-content;
-  max-width: min(24rem, calc(100vw - 2rem));
+  max-width: min(26rem, calc(100vw - 2rem));
   padding: 0.65rem 0.85rem;
   border-radius: 6px;
   background: var(--ink);
@@ -372,8 +392,6 @@ a:focus-visible,
   font-family: var(--f-display);
   font-size: 0.78rem;
   font-weight: 400;
-  letter-spacing: 0;
-  text-transform: none;
   line-height: 1.45;
   box-shadow: 0 8px 24px rgb(0 0 0 / 0.22);
   text-align: left;
@@ -397,8 +415,6 @@ a:focus-visible,
   display: block;
 }
 
-/* Each stat tile: content centered so narrow labels don't leave
-   asymmetric dead space on the right. */
 .hit {
   display: flex;
   flex-direction: column;
@@ -410,41 +426,180 @@ a:focus-visible,
 
 .hit b {
   font-family: var(--f-mono);
-  font-size: clamp(1.35rem, 2.4vw, 1.9rem);
-  font-weight: 600;
+  font-size: clamp(1.25rem, 2.2vw, 1.8rem);
+  font-weight: 700;
   line-height: 1;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  color: var(--hits-ink);
+  color: #000000 !important;
 }
 
 .hit span {
-  font-size: 0.58rem;
-  letter-spacing: 0.07em;
+  font-size: 0.76rem;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  font-weight: 700;
-  color: var(--hits-muted);
-  line-height: 1.2;
+  font-weight: 800;
+  color: #000000 !important;
+  line-height: 1.25;
 }
 
 .hit.personal-first {
   position: relative;
 }
 
-/* Pipe sits at the exact center of the 2rem gap: 1rem on each side */
 .hit.personal-first::before {
   content: "";
   position: absolute;
-  left: -1rem;
+  left: -0.8rem;
   top: 0.25rem;
   bottom: 0.25rem;
   width: 1px;
-  background: color-mix(in srgb, var(--hits-ink) 42%, transparent);
+  background: rgba(0, 0, 0, 0.25);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 640px) {
   .hit.personal-first::before { display: none; }
+}
+
+/* Microcharts in Yellow Summary Bar */
+.hit-microchart {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  text-align: left;
+  gap: 0.25rem;
+}
+
+.micro-stat-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.micro-stat-top b {
+  font-size: clamp(1.25rem, 2.2vw, 1.8rem);
+  text-align: left;
+  color: #000000 !important;
+}
+
+.micro-badge {
+  font-family: var(--f-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 800;
+  background: transparent;
+  border: none;
+  color: #000000 !important;
+  padding: 0;
+  white-space: nowrap;
+}
+
+/* Chart 1: Proportion Bar */
+.micro-bar-wrap {
+  width: 100%;
+  margin: 0.2rem 0;
+}
+
+.micro-bar-track {
+  width: 100%;
+  height: 12px;
+  background: #ffffff;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.micro-bar-fill {
+  height: 100%;
+  background: #14151a;
+  border-radius: 4px;
+  transition: width 0.35s ease;
+  min-width: 2px;
+}
+
+.micro-bar-scale {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--f-mono);
+  font-size: 0.58rem;
+  color: #ffffff !important;
+  font-weight: 700;
+  margin-top: 0.15rem;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.6);
+}
+
+.micro-caption {
+  font-size: 0.56rem !important;
+  color: #000000 !important;
+  text-transform: none !important;
+  font-weight: 600 !important;
+  line-height: 1.15;
+  opacity: 1;
+}
+
+/* Chart 2: Bullet Chart with 30% Benchmark Marker */
+.micro-bullet-wrap {
+  width: 100%;
+  margin: 0.2rem 0;
+}
+
+.micro-bullet-track {
+  position: relative;
+  width: 100%;
+  height: 12px;
+  background: #ffffff;
+  border-radius: 4px;
+  overflow: visible;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.micro-bullet-fill {
+  height: 100%;
+  background: #14151a;
+  border-radius: 4px 0 0 4px;
+  transition: width 0.35s ease;
+  max-width: 100%;
+}
+
+.micro-bullet-target {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: #ffffff;
+  transform: translateX(-50%);
+  z-index: 2;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+}
+
+.bullet-marker-line {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.bullet-marker-label {
+  display: none;
+}
+
+.micro-bullet-scale {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--f-mono);
+  font-size: 0.58rem;
+  color: #ffffff !important;
+  font-weight: 700;
+  margin-top: 0.2rem;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.6);
+}
+
+.scale-benchmark {
+  color: #ffffff !important;
+  font-weight: 900;
 }
 
 /* ---------- Sections ---------- */
@@ -501,7 +656,6 @@ form { margin: 0 0 0.6rem; }
 }
 
 .controls button { margin: 0; }
-
 .inline-controls { align-items: flex-end; }
 
 label {
@@ -548,10 +702,401 @@ form > button { margin-top: 0.6rem; }
 
 .table-note {
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-style: italic;
-  margin: 0.4rem 0 0.6rem;
-  min-height: 1em;
+  margin: 0.4rem 0 0.8rem;
+  min-height: 1.2em;
+}
+
+/* ---------- VISUAL IMPROVEMENT 3: Census vs. Zillow Rental Comparison Card ---------- */
+.dashboard-top-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+  align-items: stretch;
+  margin: 1.2rem 0;
+}
+
+@media (max-width: 860px) {
+  .dashboard-top-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rent-comparison-card {
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  background: var(--land);
+  padding: 1.2rem 1.4rem;
+  margin: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.comp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+.comp-title {
+  margin: 0.2rem 0 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.comp-tag {
+  font-family: var(--f-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.comp-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+  align-items: stretch;
+}
+
+@media (max-width: 600px) {
+  .comp-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.comp-cell {
+  background: var(--bg);
+  border: 1px solid var(--hair);
+  border-radius: 6px;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.comp-val-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.6rem;
+}
+
+.comp-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.comp-val-line b {
+  font-family: var(--f-mono);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.comp-bar-shell {
+  width: 100%;
+  height: 8px;
+  background: var(--hair);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 0.6rem;
+}
+
+.comp-bar-census {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.comp-bar-zillow {
+  height: 100%;
+  background: var(--zillow);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.comp-detail {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.35;
+  margin: 0;
+}
+
+
+/* ---------- VISUAL IMPROVEMENT 1: Full-state Renter Burden Distribution Dot-Plot ---------- */
+.state-burden-panel {
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  background: var(--land);
+  padding: 1.2rem 1.4rem;
+  margin: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.3rem;
+}
+
+.panel-title {
+  margin: 0.2rem 0 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.panel-tag {
+  font-family: var(--f-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  background: var(--warn-bg);
+  color: var(--warn);
+  white-space: nowrap;
+}
+
+.distribution-chart-wrap {
+  width: 100%;
+  overflow-x: auto;
+  margin: 0.8rem 0;
+}
+
+.distribution-chart-wrap svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  min-width: 600px;
+}
+
+.chart-summary-line {
+  font-family: var(--f-mono);
+  font-size: 0.78rem;
+  color: var(--ink-2);
+  border-top: 1px solid var(--hair);
+  padding-top: 0.6rem;
+  margin-top: 0.4rem;
+}
+
+/* ---------- Renter burden story ---------- */
+.burden-story {
+  border: 1px solid var(--hair);
+  border-left: 4px solid var(--warn);
+  border-radius: 6px;
+  background: var(--land);
+  padding: 1.1rem 1.2rem 1.2rem;
+  margin: 0.8rem 0 1.2rem;
+}
+.burden-story[hidden] { display: none; }
+
+.burden-story h3 {
+  font-size: 0.72rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--muted);
+  margin: 0 0 0.5rem;
+}
+
+.burden-story .hook {
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0 0 0.6rem;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.burden-story .hook b { color: var(--warn); }
+
+.burden-story p {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: var(--ink-2);
+  line-height: 1.55;
+  font-variant-numeric: tabular-nums;
+}
+.burden-story p:last-child { margin-bottom: 0; }
+.burden-story b { color: var(--ink); font-weight: 700; }
+
+.burden-range {
+  position: relative;
+  height: 44px;
+  margin: 0.9rem 0 0.3rem;
+}
+
+.burden-track {
+  position: absolute;
+  inset: 14px 0 auto 0;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--good) 55%, var(--bg)),
+    color-mix(in srgb, var(--hits-bg) 85%, var(--bg)),
+    var(--warn)
+  );
+}
+
+.burden-pin {
+  position: absolute;
+  top: 6px;
+  width: 4px;
+  height: 24px;
+  background: var(--ink);
+  border-radius: 2px;
+  transform: translateX(-50%);
+}
+.burden-pin::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  width: 8px;
+  height: 8px;
+  background: var(--ink);
+}
+
+.burden-scale {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.6rem;
+  font-family: var(--f-mono);
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-top: 0.2rem;
+  min-width: 0;
+}
+.burden-scale span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.burden-scale span:last-child { text-align: right; }
+
+/* ---------- VISUAL IMPROVEMENT 2: Historical Trend Cards ---------- */
+.selected-county {
+  font-family: var(--f-mono);
+  font-size: 0.85rem;
+  color: var(--ink-2);
+  margin: 0 0 0.5rem;
+}
+
+.trend-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1.1rem;
+  margin: 1.2rem 0;
+}
+
+.trend-card {
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  background: var(--land);
+  padding: 1.1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.trend-card h3 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin: 0 0 0.85rem;
+  color: var(--ink);
+}
+
+.trend-bars {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+  align-items: end;
+  height: 140px;
+  margin: 0.5rem 0;
+}
+
+.trend-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  gap: 0.4rem;
+}
+
+.trend-bar b {
+  font-family: var(--f-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.trend-bar .col-wrap {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+}
+
+.trend-bar .col {
+  width: 72%;
+  max-width: 44px;
+  background: var(--accent);
+  border-radius: 4px 4px 0 0;
+  min-height: 4px;
+  transition: height 0.35s ease;
+}
+
+.trend-bar > span {
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.trend-change {
+  margin: 0.85rem 0 0;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--hair);
+  font-family: var(--f-mono);
+  font-size: 0.78rem;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.trend-change b {
+  color: var(--ink);
+  font-weight: 700;
 }
 
 /* ---------- Frame: table + facts ---------- */
@@ -704,7 +1249,7 @@ tbody td {
   overflow-wrap: normal;
 }
 
-tbody tr { transition: background-color 0.4s; }
+tbody tr { transition: background-color 0.4s; cursor: pointer; }
 tbody tr:hover {
   background: color-mix(in srgb, var(--bg) 50%, transparent);
 }
@@ -722,205 +1267,6 @@ tbody tr.row-highlight {
   70%  { background: color-mix(in srgb, var(--hits-bg) 55%, transparent); }
   100% { background: color-mix(in srgb, var(--hits-bg) 55%, transparent); }
 }
-
-/* ---------- Selected county ---------- */
-.selected-county {
-  font-family: var(--f-mono);
-  font-size: 0.85rem;
-  color: var(--ink-2);
-  margin: 0 0 0.5rem;
-}
-
-/* ---------- Trend cards ---------- */
-.trend-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-  gap: 1rem;
-  margin: 1.2rem 0;
-}
-
-.trend-card {
-  border: 1px solid var(--hair);
-  border-radius: 8px;
-  background: var(--land);
-  padding: 1rem 1.1rem 1.1rem;
-  display: flex;
-  flex-direction: column;
-}
-
-.trend-card h3 {
-  font-size: 0.82rem;
-  font-weight: 700;
-  margin: 0 0 0.85rem;
-  color: var(--ink);
-}
-
-.trend-bars {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem;
-  align-items: end;
-  height: 130px;
-}
-
-.trend-bar {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  height: 100%;
-  gap: 0.35rem;
-}
-
-.trend-bar b {
-  font-family: var(--f-mono);
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--ink-2);
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.1;
-}
-
-.trend-bar .col-wrap {
-  flex: 1;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  width: 100%;
-}
-
-.trend-bar .col {
-  width: 70%;
-  max-width: 42px;
-  background: var(--accent);
-  border-radius: 3px 3px 0 0;
-  min-height: 3px;
-  transition: height 0.3s ease;
-}
-
-.trend-bar > span {
-  font-size: 0.6rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  font-weight: 700;
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-.trend-change {
-  margin: 0.85rem 0 0;
-  padding-top: 0.7rem;
-  border-top: 1px solid var(--hair);
-  font-family: var(--f-mono);
-  font-size: 0.78rem;
-  color: var(--ink-2);
-  font-variant-numeric: tabular-nums;
-}
-
-.trend-change b {
-  color: var(--ink);
-  font-weight: 700;
-}
-
-/* ---------- Renter burden story ---------- */
-.burden-story {
-  border: 1px solid var(--hair);
-  border-left: 3px solid var(--warn);
-  border-radius: 6px;
-  background: var(--land);
-  padding: 1.1rem 1.2rem 1.2rem;
-  margin: 0.8rem 0 1.2rem;
-}
-.burden-story[hidden] { display: none; }
-
-.burden-story h3 {
-  font-size: 0.68rem;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  font-weight: 600;
-  color: var(--muted);
-  margin: 0 0 0.6rem;
-}
-
-.burden-story .hook {
-  font-size: 1.2rem;
-  font-weight: 700;
-  line-height: 1.3;
-  margin: 0 0 0.6rem;
-  color: var(--ink);
-  letter-spacing: -0.01em;
-  text-wrap: balance;
-}
-
-.burden-story .hook b { color: var(--warn); }
-
-.burden-story p {
-  margin: 0 0 0.5rem;
-  font-size: 0.9rem;
-  color: var(--ink-2);
-  line-height: 1.55;
-  font-variant-numeric: tabular-nums;
-}
-.burden-story p:last-child { margin-bottom: 0; }
-.burden-story b { color: var(--ink); font-weight: 700; }
-
-.burden-range {
-  position: relative;
-  height: 44px;
-  margin: 0.9rem 0 0.3rem;
-}
-
-.burden-track {
-  position: absolute;
-  inset: 14px 0 auto 0;
-  height: 6px;
-  border-radius: 3px;
-  background: linear-gradient(
-    to right,
-    color-mix(in srgb, var(--good) 55%, var(--bg)),
-    color-mix(in srgb, var(--hits-bg) 85%, var(--bg)),
-    var(--warn)
-  );
-}
-
-.burden-pin {
-  position: absolute;
-  top: 6px;
-  width: 4px;
-  height: 24px;
-  background: var(--ink);
-  border-radius: 2px;
-  transform: translateX(-50%);
-}
-.burden-pin::after {
-  content: "";
-  position: absolute;
-  bottom: -6px;
-  left: 50%;
-  transform: translateX(-50%) rotate(45deg);
-  width: 8px;
-  height: 8px;
-  background: var(--ink);
-}
-
-.burden-scale {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 0.6rem;
-  font-family: var(--f-mono);
-  font-size: 0.68rem;
-  color: var(--muted);
-  margin-top: 0.2rem;
-  min-width: 0;
-}
-.burden-scale span {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
-}
-.burden-scale span:last-child { text-align: right; }
 
 /* ---------- Details ---------- */
 details.method {
@@ -1054,7 +1400,6 @@ h3.sec {
 }
 
 .about p:last-of-type { margin-bottom: 0; }
-
 .about b { color: var(--ink); font-weight: 700; }
 
 .about-links {
@@ -1275,6 +1620,399 @@ footer a {
   .about { padding: 1.1rem 1.1rem 1.2rem; }
   .inline-controls label { max-width: none; flex-basis: 100%; }
   .inline-controls button { flex: 1 1 auto; }
-  .trend-bars { height: 110px; }
+  .trend-bars { height: 120px; }
   .info-wrap { top: 0.75rem; right: 0.8rem; }
+}
+
+/* ---------- INTERACTIVE MARYLAND GEOGRAPHICAL MAP VISUALIZATION ---------- */
+.maryland-map-card {
+  border: 1px solid var(--hair);
+  border-radius: 8px;
+  background: var(--land);
+  padding: 1.4rem 1.6rem 1.6rem;
+  margin: 1.6rem 0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+}
+
+.map-card-header {
+  margin-bottom: 1.2rem;
+}
+
+.map-header-pre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 0.35rem;
+}
+
+.map-kicker {
+  font-family: var(--f-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.map-selected-pill {
+  font-family: var(--f-mono);
+  font-size: 0.78rem;
+  color: var(--ink-2);
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+  padding: 0.25rem 0.65rem;
+  border-radius: 4px;
+}
+
+.map-selected-pill b {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.map-title {
+  margin: 0 0 0.4rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+
+.map-dek {
+  margin: 0 0 1rem;
+  color: var(--ink-2);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  max-width: 54rem;
+}
+
+.map-controls-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem;
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+  border-radius: 6px;
+  border: 1px solid var(--hair);
+}
+
+.map-metric-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.map-metric-btn {
+  all: unset;
+  box-sizing: border-box;
+  padding: 0.5rem 0.85rem;
+  font-family: var(--f-display);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.map-metric-btn:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+
+.map-metric-btn.active {
+  background: var(--ink);
+  color: var(--bg);
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.map-metric-btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* Map Stage */
+.map-stage {
+  position: relative;
+  background: var(--bg);
+  border: 1px solid var(--hair);
+  border-radius: 6px;
+  overflow: visible;
+  padding: 0.8rem 0.8rem 1rem;
+  margin-bottom: 1.2rem;
+}
+
+.map-svg-wrap {
+  position: relative;
+  width: 100%;
+  min-height: 340px;
+}
+
+#marylandMapSvg {
+  width: 100%;
+  height: auto;
+  max-height: 520px;
+  display: block;
+  user-select: none;
+}
+
+.county-path {
+  stroke: #ffffff;
+  stroke-width: 1.2px;
+  stroke-linejoin: round;
+  cursor: pointer;
+  transition: fill 0.3s ease, stroke 0.15s ease, stroke-width 0.15s ease, filter 0.15s ease;
+}
+
+.county-path:hover {
+  filter: brightness(1.08) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+  stroke: var(--ink);
+  stroke-width: 2.2px;
+}
+
+.county-path.selected {
+  stroke: #000000;
+  stroke-width: 3.2px;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.35));
+}
+
+.county-path:focus-visible {
+  outline: none;
+  stroke: #2563eb;
+  stroke-width: 3px;
+}
+
+/* Map labels: hidden to keep vector geography clean and uncluttered */
+.map-labels {
+  display: none;
+}
+
+/* Floating Tooltip: high-contrast dark card in all color modes with smart edge/corner placement */
+.map-floating-tooltip {
+  position: absolute;
+  pointer-events: none;
+  z-index: 50;
+  background: #111317 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 6px;
+  padding: 0.65rem 0.85rem;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  max-width: 260px;
+  width: max-content;
+  transition: opacity 0.15s ease;
+}
+
+.tooltip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 0.35rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  padding-bottom: 0.3rem;
+}
+
+.tooltip-name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #ffffff !important;
+}
+
+.tooltip-rank {
+  font-family: var(--f-mono);
+  font-size: 0.74rem;
+  color: #fde047 !important;
+  font-weight: 700;
+}
+
+.tooltip-primary-val {
+  font-family: var(--f-mono);
+  font-size: 1.22rem;
+  font-weight: 800;
+  color: #ffffff !important;
+  line-height: 1.15;
+}
+
+.tooltip-sub {
+  font-size: 0.76rem;
+  color: #e2e8f0 !important;
+  margin-top: 0.25rem;
+  line-height: 1.35;
+}
+
+.tooltip-hint {
+  font-size: 0.68rem;
+  color: #cbd5e1 !important;
+  margin-top: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+/* Map Legend */
+.map-legend-bar {
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--hair);
+}
+
+.legend-scale-block {
+  max-width: 42rem;
+}
+
+.legend-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 0.35rem;
+}
+
+.legend-label {
+  font-family: var(--f-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.legend-state-avg {
+  font-family: var(--f-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.legend-bar-track {
+  width: 100%;
+  height: 12px;
+  border-radius: 3px;
+  margin-bottom: 0.3rem;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.legend-scale-labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--f-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+/* Bottom Inspector */
+.map-inspector {
+  display: grid;
+  grid-template-columns: 1fr 2.2fr;
+  gap: 1.2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--hair);
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .map-inspector {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+.inspector-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.inspector-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.inspector-kicker {
+  font-family: var(--f-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.inspector-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--hits-ink);
+  background: var(--hits-bg);
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+}
+
+.inspector-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+
+.inspector-desc {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink-2);
+  line-height: 1.4;
+}
+
+.inspector-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.8rem;
+}
+
+@media (max-width: 600px) {
+  .inspector-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.inspector-stat {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border: 1px solid var(--hair);
+  border-radius: 6px;
+  padding: 0.65rem 0.8rem;
+}
+
+.insp-stat-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 0.2rem;
+}
+
+.insp-stat-val {
+  font-family: var(--f-mono);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1.15;
+}
+
+.insp-stat-sub {
+  font-size: 0.68rem;
+  color: var(--ink-2);
+  margin-top: 0.2rem;
+  line-height: 1.2;
 }

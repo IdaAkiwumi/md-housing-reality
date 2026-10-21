@@ -1,0 +1,918 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Maryland Housing Burden: Rent, Income, and Renter Burden by County</title>
+
+  <meta
+    name="description"
+    content="Compare median rent, median income, renter income, and renter rent burden across all 24 Maryland counties. Free, no ads, updated monthly with Census ACS and Zillow ZORI data."
+  >
+  <meta name="keywords" content="Maryland rent, Maryland housing burden, rent by county, rent to income ratio, Maryland housing affordability, Baltimore rent, Census ACS, rent burden, Zillow rent">
+
+  <link rel="canonical" href="https://idaakiwumi.github.io/md-housing-reality/">
+
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="site.webmanifest">
+  <meta name="theme-color" content="#fbbf24">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Maryland Housing Burden">
+  <meta property="og:title" content="Maryland Housing Burden: Rent, Income, and Renter Burden by County">
+  <meta property="og:description" content="What rent actually costs. What income you would need. How you compare across every Maryland county.">
+  <meta property="og:url" content="https://idaakiwumi.github.io/md-housing-reality/">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Maryland Housing Burden">
+  <meta name="twitter:description" content="Rent, income, and renter burden for every Maryland county.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap"
+  >
+
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Maryland Housing Burden",
+    "url": "https://idaakiwumi.github.io/md-housing-reality/",
+    "inLanguage": "en-US",
+    "author": {
+      "@type": "Person",
+      "name": "Ida Akiwumi",
+      "url": "https://www.linkedin.com/in/idaa11/"
+    }
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    "name": "Maryland county housing burden and income",
+    "description": "Median gross rent, median household income, median renter household income, renter rent burden, and current market rent for all 24 Maryland jurisdictions across the 2010 to 2014, 2015 to 2019, and 2020 to 2024 American Community Survey windows, plus Zillow Observed Rent Index data.",
+    "spatialCoverage": { "@type": "Place", "name": "Maryland, USA" },
+    "temporalCoverage": "2010/2026",
+    "creator": { "@type": "Person", "name": "Ida Akiwumi", "url": "https://www.linkedin.com/in/idaa11/" },
+    "license": "https://opensource.org/license/mit/",
+    "distribution": {
+      "@type": "DataDownload",
+      "contentUrl": "https://idaakiwumi.github.io/md-housing-reality/counties.csv",
+      "encodingFormat": "text/csv"
+    }
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Which Maryland county has the highest renter burden?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Based on the 2020 to 2024 American Community Survey, Kent County has the highest share of surveyed renter households spending 30 percent or more of income on rent, at about 59.6 percent. Garrett County has the lowest, at about 35 percent." }
+      },
+      {
+        "@type": "Question",
+        "name": "What does median monthly gross rent mean in Maryland?",
+        "acceptedAnswer": { "@type": "Answer", "text": "The middle monthly rent paid by Maryland renters, including tenant-paid utilities, based on the U.S. Census Bureau American Community Survey 5-year estimates." }
+      },
+      {
+        "@type": "Question",
+        "name": "How is the 30% rent benchmark calculated?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Monthly rent multiplied by 12, then divided by 0.30. It shows the yearly income that would make median rent equal to 30 percent of household income." }
+      },
+      {
+        "@type": "Question",
+        "name": "Why is Census rent data often lower than current asking rents?",
+        "acceptedAnswer": { "@type": "Answer", "text": "The Census American Community Survey publishes five-year rolling averages and includes utilities in gross rent. Current asking rents from the Zillow Observed Rent Index reflect asking rents for newly listed units on the market today. The two reflect different measures and timeframes." }
+      },
+      {
+        "@type": "Question",
+        "name": "Why is current market rent missing for some counties?",
+        "acceptedAnswer": { "@type": "Answer", "text": "The Zillow Observed Rent Index excludes markets where the rental sample is too small to produce a reliable monthly estimate. In Maryland, Kent and Somerset counties fall below that threshold. When market rent is unavailable, the Census median rent is still shown." }
+      }
+    ]
+  }
+  </script>
+</head>
+
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <div class="page">
+    <header class="hero">
+      <div class="hero-l">
+        <div class="eyebrow">Maryland · updated monthly</div>
+
+        <h1>Maryland Housing Burden</h1>
+
+        <p class="dek">
+          What rent actually costs. What income you would need. How you compare across Maryland.
+        </p>
+
+        <div class="cta">
+          <a class="btn" href="#scenarios">Scenarios</a>
+
+          <div class="share-wrap">
+            <button
+              class="btn"
+              id="shareBtn"
+              type="button"
+              aria-expanded="false"
+              aria-controls="shareMenu"
+            >Share</button>
+
+            <div class="share-menu" id="shareMenu" hidden>
+              <button type="button" data-share="copy">Copy link</button>
+              <a data-share="bluesky" href="#" target="_blank" rel="noopener">Share on Bluesky</a>
+              <a data-share="substack" href="#" target="_blank" rel="noopener">Share on Substack</a>
+              <a data-share="facebook" href="#" target="_blank" rel="noopener">Share on Facebook</a>
+              <a data-share="linkedin" href="#" target="_blank" rel="noopener">Share on LinkedIn</a>
+              <a data-share="reddit" href="#" target="_blank" rel="noopener">Share on Reddit</a>
+              <a data-share="whatsapp" href="#" target="_blank" rel="noopener">Share on WhatsApp</a>
+              <a data-share="telegram" href="#" target="_blank" rel="noopener">Share on Telegram</a>
+              <a data-share="email" href="#">Share by email</a>
+            </div>
+          </div>
+
+          <a class="btn watch" href="#newsletter">
+            <span aria-hidden="true">✉</span> Rent Watch
+          </a>
+
+          <a class="btn tip" href="#support">
+            <span aria-hidden="true">☕</span> Support
+          </a>
+        </div>
+      </div>
+
+      <div class="hero-r">
+        <div class="stamp" id="stamp">Census ACS · 2020–2024</div>
+      </div>
+    </header>
+
+    <!-- YELLOW SUMMARY BAR WITH TWO PURPOSEFUL MICROCHARTS -->
+    <section class="hits" aria-label="Key figures for the selected county">
+      <div class="info-wrap">
+        <button
+          type="button"
+          class="info-icon"
+          aria-describedby="infoTip"
+          aria-label="Summary bar notes"
+        ><span aria-hidden="true">i</span></button>
+        <span class="info-tip" id="infoTip" role="tooltip">
+          Historical Census estimates describe surveyed periods, not live listings. Current market rent is a separate Zillow monthly estimate where available. State average is an unweighted average of the 24 jurisdiction medians. Calculators are hypothetical.
+        </span>
+      </div>
+
+      <div class="hits-header">
+        <span class="eyebrow">Selected county</span>
+        <b id="hitsCountyName">—</b>
+      </div>
+
+      <!-- Stat 1: Census Rent -->
+      <div class="hit">
+        <b id="hitRent">—</b>
+        <span>Census median rent</span>
+      </div>
+
+      <!-- Stat 2: Current Market Rent -->
+      <div class="hit">
+        <b id="hitMarketRent">—</b>
+        <span>Current market rent</span>
+      </div>
+
+      <!-- Stat 3: Average of County Medians -->
+      <div class="hit">
+        <b id="hitMdAvg">—</b>
+        <span>Average of county medians</span>
+      </div>
+
+      <!-- Stat 4: Income for 30% Benchmark -->
+      <div class="hit">
+        <b id="hitBenchmark">—</b>
+        <span>Income for 30% benchmark</span>
+      </div>
+
+      <!-- MICROCHART 1: Renter Cost Burden Horizontal Proportion Bar -->
+      <div class="hit hit-microchart" id="hitBurdenTile">
+        <div class="micro-stat-top">
+          <b id="hitBurden">—</b>
+          <span class="micro-badge">Census ACS</span>
+        </div>
+        <div class="micro-bar-wrap" role="img" id="hitBurdenBarWrap" aria-label="Renter cost burden proportion bar">
+          <div class="micro-bar-track">
+            <div class="micro-bar-fill" id="hitBurdenFill" style="width: 0%;"></div>
+          </div>
+          <div class="micro-bar-scale" aria-hidden="true">
+            <span>0%</span>
+            <span>100%</span>
+          </div>
+        </div>
+        <span>Renters paying 30%+</span>
+      </div>
+
+      <!-- Stat 6: Visitor Household Income -->
+      <div class="hit personal-first">
+        <b id="hitIncome">$65,000</b>
+        <span>Your household income</span>
+      </div>
+
+      <!-- MICROCHART 2: Rent Share Bullet Chart with 30% Benchmark Marker -->
+      <div class="hit hit-microchart" id="hitShareTile">
+        <div class="micro-stat-top">
+          <b id="hitShare">—</b>
+          <span class="micro-badge" id="hitShareBadge">30% benchmark</span>
+        </div>
+        <div class="micro-bullet-wrap" role="img" id="hitShareBulletWrap" aria-label="Rent share of income bullet chart">
+          <div class="micro-bullet-track" id="hitShareTrack">
+            <div class="micro-bullet-fill" id="hitShareFill" style="width: 0%;"></div>
+            <div class="micro-bullet-target" id="hitShareTarget" title="Standard 30% affordability benchmark" style="left: 30%;">
+              <span class="bullet-marker-line"></span>
+              <span class="bullet-marker-label">30%</span>
+            </div>
+          </div>
+          <div class="micro-bullet-scale" aria-hidden="true">
+            <span>0%</span>
+            <span>100%</span>
+          </div>
+        </div>
+        <span>Your rent share</span>
+      </div>
+    </section>
+
+    <main id="main">
+      <section id="compare" aria-labelledby="compareHeading">
+        <h2 id="compareHeading">Your rent share by county</h2>
+
+        <form id="incomeForm">
+          <div class="controls inline-controls">
+            <label for="income">
+              Yearly household income
+              <input
+                id="income"
+                name="income"
+                type="number"
+                min="1"
+                max="100000000"
+                step="any"
+                inputmode="numeric"
+                value="65000"
+                required
+              >
+            </label>
+
+            <button type="submit">Compare</button>
+
+            <label for="county">
+              County
+              <select id="county" name="county"></select>
+            </label>
+
+            <button id="showCounty" type="button" class="btn ghost">Show row</button>
+          </div>
+
+          <p class="help">
+            Example: <b>65000</b> for $65,000. Income stays in your browser.
+          </p>
+        </form>
+
+        <!-- Renter cost burden story card for selected county -->
+        <div id="burdenStory" class="burden-story" hidden></div>
+
+        <!-- Side-by-side Dashboard Cards Grid -->
+        <div class="dashboard-top-grid">
+          <!-- Census vs. Zillow Market Rent Comparison -->
+          <div id="rentComparisonBox" class="rent-comparison-card" aria-labelledby="rentCompHeading">
+            <div class="comp-header">
+              <h3 id="rentCompHeading" class="comp-title">—</h3>
+              <span class="comp-tag" id="rentCompTag">Census vs. Zillow</span>
+            </div>
+
+            <div class="comp-grid" id="rentCompGrid">
+              <div class="comp-cell">
+                <div class="comp-val-line">
+                  <span class="comp-label">Census Median Gross Rent</span>
+                  <b id="compCensusRent">—</b>
+                </div>
+                <div class="comp-bar-shell">
+                  <div class="comp-bar-census" id="compCensusBar" style="width: 0%;"></div>
+                </div>
+                <p class="comp-detail" id="compCensusDetail">
+                  Includes tenant-paid utilities. 5-year survey window ending 2024.
+                </p>
+              </div>
+
+              <div class="comp-cell">
+                <div class="comp-val-line">
+                  <span class="comp-label">Zillow Current Market Rent</span>
+                  <b id="compZillowRent">—</b>
+                </div>
+                <div class="comp-bar-shell">
+                  <div class="comp-bar-zillow" id="compZillowBar" style="width: 0%;"></div>
+                </div>
+                <p class="comp-detail" id="compZillowDetail">
+                  Zillow Observed Rent Index (ZORI) monthly asking rent for available market listings.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Statewide Renter Burden Distribution Dot-Plot -->
+          <div id="stateBurdenSection" class="state-burden-panel" aria-labelledby="stateBurdenHeading">
+            <div class="panel-header">
+              <h3 id="stateBurdenHeading" class="panel-title">Renter cost burden across all 24 Maryland jurisdictions</h3>
+              <span class="panel-tag">20% to 80% axis</span>
+            </div>
+
+            <!-- SVG Distribution Chart -->
+            <div class="distribution-chart-wrap" id="distributionChartWrap" role="region" aria-label="Maryland county renter burden distribution chart" tabindex="0">
+              <svg id="burdenDistributionSvg" viewBox="0 0 960 140" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                <!-- Dynamically rendered via app.js -->
+              </svg>
+            </div>
+
+            <div class="chart-summary-line" id="chartSummaryLine">
+              Select any point on the chart or use the dropdown to update the selected county.
+            </div>
+          </div>
+        </div>
+
+        <!-- INTERACTIVE GEOGRAPHICAL MAP DATA VISUALIZATION -->
+        <section id="marylandMapSection" class="maryland-map-card" aria-labelledby="mapHeading">
+          <div class="map-card-header">
+            <div class="map-header-copy">
+              <div class="map-header-pre">
+                <span class="map-kicker">Geographic visualization</span>
+                <span class="map-selected-pill" id="mapSelectedBadge">Selected: <b id="mapSelectedBadgeName">Allegany County</b></span>
+              </div>
+              <h3 id="mapHeading" class="map-title">Maryland County Housing & Affordability Map</h3>
+            </div>
+
+            <!-- Metric Layer Switcher -->
+            <div class="map-controls-bar" role="toolbar" aria-label="Map data metric layers">
+              <div class="map-metric-buttons" id="mapMetricButtons">
+                <button type="button" class="map-metric-btn active" data-metric="burden_percent">
+                  Renter Cost Burden
+                </button>
+                <button type="button" class="map-metric-btn" data-metric="rent">
+                  Census Median Rent
+                </button>
+                <button type="button" class="map-metric-btn" data-metric="market_rent_now">
+                  Current Market Rent
+                </button>
+                <button type="button" class="map-metric-btn" data-metric="share">
+                  Your Rent Share
+                </button>
+                <button type="button" class="map-metric-btn" data-metric="renter_income">
+                  Renter Median Income
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Main Map Display and Floating Tooltip Container -->
+          <div class="map-stage" id="mapStage">
+            <div class="map-svg-wrap" id="mapSvgWrap" role="region" aria-label="Interactive Maryland county map">
+              <svg id="marylandMapSvg" viewBox="0 0 960 520" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="mapHeading">
+                <defs>
+                  <!-- Pattern for counties missing Zillow data -->
+                  <pattern id="diagonalHatch" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                    <line x1="0" y1="0" x2="0" y2="8" stroke="#9ca3af" stroke-width="2" />
+                  </pattern>
+                </defs>
+                <g id="mapWaterBg" class="map-water"></g>
+                <g id="mapCountiesGroup" class="map-counties"></g>
+                <g id="mapLabelsGroup" class="map-labels" pointer-events="none"></g>
+                <g id="mapSelectionGroup" class="map-selection" pointer-events="none"></g>
+              </svg>
+
+              <!-- Floating Tooltip on Hover -->
+              <div class="map-floating-tooltip" id="mapTooltip" role="tooltip" hidden>
+                <div class="tooltip-header">
+                  <b class="tooltip-name" id="tipCountyName">—</b>
+                  <span class="tooltip-rank" id="tipCountyRank">#— of 24</span>
+                </div>
+                <div class="tooltip-primary-val" id="tipPrimaryVal">—</div>
+                <div class="tooltip-sub" id="tipSecondaryVal">—</div>
+                <div class="tooltip-hint">Click to inspect and select</div>
+              </div>
+            </div>
+
+            <!-- Map Legend and Summary Bar -->
+            <div class="map-legend-bar">
+              <div class="legend-scale-block">
+                <div class="legend-title-row">
+                  <span class="legend-label" id="legendMetricLabel">Renter Cost Burden (% spending 30%+ on gross rent)</span>
+                  <span class="legend-state-avg" id="legendStateAvg">MD State Average: 49.3%</span>
+                </div>
+                <div class="legend-bar-track" id="legendGradientTrack"></div>
+                <div class="legend-scale-labels" id="legendScaleLabels">
+                  <span id="legendMin">—</span>
+                  <span id="legendMid">—</span>
+                  <span id="legendMax">—</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Inspector Card for Inspected / Selected County -->
+          <div class="map-inspector" id="mapInspector">
+            <div class="inspector-summary">
+              <div class="inspector-badge-row">
+                <span class="inspector-kicker">County Snapshot</span>
+                <span class="inspector-tag" id="inspStatusTag">Active County</span>
+              </div>
+              <h4 class="inspector-title" id="inspCountyName">Allegany County</h4>
+              <p class="inspector-desc" id="inspSummaryText">
+                43.6% of renter households pay 30% or more of income on gross rent.
+              </p>
+            </div>
+
+            <div class="inspector-stats-grid">
+              <div class="inspector-stat">
+                <span class="insp-stat-label">Census Median Rent</span>
+                <b class="insp-stat-val" id="inspCensusRent">$805</b>
+                <span class="insp-stat-sub" id="inspRentMoe">±$41 MOE</span>
+              </div>
+              <div class="inspector-stat">
+                <span class="insp-stat-label">Market Rent (ZORI)</span>
+                <b class="insp-stat-val" id="inspMarketRent">$1,020</b>
+                <span class="insp-stat-sub">Monthly asking rent</span>
+              </div>
+              <div class="inspector-stat">
+                <span class="insp-stat-label">Cost Burden</span>
+                <b class="insp-stat-val" id="inspBurden">43.6%</b>
+                <span class="insp-stat-sub" id="inspBurdenRank">Rank #21 of 24</span>
+              </div>
+              <div class="inspector-stat">
+                <span class="insp-stat-label">Your Rent Share</span>
+                <b class="insp-stat-val" id="inspShare">14.9%</b>
+                <span class="insp-stat-sub" id="inspShareAfford">Affordable (under 30%)</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- IMPROVEMENT 2: Historical Trends with Dual-Income Metric Separation -->
+        <div id="trends" aria-labelledby="trendsHeading">
+          <h3 id="trendsHeading" class="sub-heading">
+            How have the estimates changed over time?
+          </h3>
+
+          <p id="trendTitle" class="selected-county"></p>
+
+          <p class="section-dek">
+            Discrete five-year survey windows, not longitudinal tracking of the same households. Dollar figures are nominal and not adjusted for inflation.
+          </p>
+
+          <div id="trendCards" class="trend-cards"></div>
+
+          <details class="method">
+            <summary>Selected county estimates and margins of error</summary>
+
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Selected county historical estimates">
+              <table>
+                <caption>Selected county estimates by survey window</caption>
+
+                <thead>
+                  <tr>
+                    <th scope="col">Survey window</th>
+                    <th scope="col">Monthly gross rent</th>
+                    <th scope="col">Rent margin of error</th>
+                    <th scope="col">Yearly household income</th>
+                    <th scope="col">Income margin of error</th>
+                    <th scope="col">Renter household income</th>
+                    <th scope="col">Owner occupied home value</th>
+                    <th scope="col">Home value margin of error</th>
+                  </tr>
+                </thead>
+
+                <tbody id="history"></tbody>
+              </table>
+            </div>
+
+            <p>
+              Renter household income comes from ACS table B25119. Home value is the median estimated value of owner-occupied homes, not the median sale price.
+            </p>
+          </details>
+        </div>
+
+        <h3 class="sub-heading" id="allCountiesHeading">All Maryland counties</h3>
+
+        <div class="frame">
+          <div class="table-wrap" tabindex="0" role="region" aria-label="County comparison table">
+            <table id="countiesTable" aria-labelledby="allCountiesHeading">
+              <caption>
+                County rent, income benchmarks, and renter housing costs. Select a column header to sort.
+              </caption>
+
+              <thead>
+                <tr>
+                  <th scope="col" data-sort="name" aria-sort="none">
+                    <button type="button" class="th-sort">
+                      County<span class="sort-ind" aria-hidden="true"></span>
+                    </button>
+                  </th>
+                  <th scope="col" data-sort="rent" aria-sort="none">
+                    <button type="button" class="th-sort">
+                      Census median rent<span class="sort-ind" aria-hidden="true"></span>
+                    </button>
+                  </th>
+                  <th scope="col">
+                    <span class="th-plain">Margin of error</span>
+                  </th>
+                  <th scope="col" data-sort="market_rent_now" aria-sort="none">
+                    <button type="button" class="th-sort">
+                      Current market rent<span class="sort-ind" aria-hidden="true"></span>
+                    </button>
+                  </th>
+                  <th scope="col" data-sort="benchmark" aria-sort="none">
+                    <button type="button" class="th-sort">
+                      Income for 30% benchmark<span class="sort-ind" aria-hidden="true"></span>
+                    </button>
+                  </th>
+                  <th scope="col" data-sort="share" aria-sort="none">
+                    <button type="button" class="th-sort">
+                      Median rent as share of your income<span class="sort-ind" aria-hidden="true"></span>
+                    </button>
+                  </th>
+                  <th scope="col" data-sort="burden_percent" aria-sort="none">
+                    <button type="button" class="th-sort">
+                      Renters spending 30% or more<span class="sort-ind" aria-hidden="true"></span>
+                    </button>
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody id="counties"></tbody>
+            </table>
+          </div>
+
+          <aside class="facts">
+            <div class="block">
+              <h3>What this means</h3>
+              <p>
+                Census median is a 5-year average ending 2024. Current market rent is Zillow's monthly estimate of asking rent today. Renter percentage describes surveyed renter households in the Census sample, not your income.
+              </p>
+            </div>
+
+            <div class="block">
+              <h3>Missing market rent?</h3>
+              <p>
+                Zillow does not publish the Rent Index for markets with too few listings. In Maryland that applies to Kent and Somerset counties. Their Census median rent still appears in the column to the left.
+              </p>
+            </div>
+
+            <div class="block">
+              <h3>Take the data with you</h3>
+              <p>
+                <a href="counties.csv" download>Download CSV</a>
+                &nbsp;·&nbsp;
+                <a href="data.json" target="_blank" rel="noopener">View JSON</a>
+              </p>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="scenarios" aria-labelledby="scenariosHeading">
+        <h2 id="scenariosHeading">Scenarios</h2>
+
+        <p class="section-dek">
+          Hypothetical scenarios based on assumptions you choose. Not forecasts or legal limits.
+        </p>
+
+        <div class="scenario-grid">
+          <section class="calculator" aria-labelledby="rentScenarioHeading">
+            <h3 id="rentScenarioHeading">Rent vs. income growth</h3>
+
+            <p id="scenarioIncome" class="help"></p>
+
+            <form id="rentForm">
+              <div class="controls">
+                <label for="startRent">
+                  Starting monthly rent ($)
+                  <input id="startRent" name="startRent" type="number" min="1" max="1000000" step="any" inputmode="numeric" value="1800" required>
+                </label>
+
+                <label for="rentGrowth">
+                  Yearly rent increase (%)
+                  <input id="rentGrowth" name="rentGrowth" type="number" min="-20" max="50" step="any" value="3" required>
+                </label>
+
+                <label for="incomeGrowth">
+                  Yearly income increase (%)
+                  <input id="incomeGrowth" name="incomeGrowth" type="number" min="-20" max="50" step="any" value="2" required>
+                </label>
+
+                <label for="years">
+                  Years ahead
+                  <input id="years" name="years" type="number" min="1" max="40" step="1" value="5" required>
+                </label>
+              </div>
+
+              <button type="submit">Calculate rent scenario</button>
+            </form>
+
+            <div id="rentResult" class="result" role="status" aria-live="polite">
+              Enter your assumptions and select Calculate rent scenario.
+            </div>
+          </section>
+
+          <section class="calculator" aria-labelledby="mortgageHeading">
+            <h3 id="mortgageHeading">Illustrative mortgage estimate</h3>
+
+            <p class="help">
+              Zero means leave that cost out of the estimate.
+            </p>
+
+            <form id="mortgageForm">
+              <div class="controls">
+                <label for="price">
+                  Purchase price ($)
+                  <input id="price" name="price" type="number" min="1" max="100000000" step="any" inputmode="numeric" value="400000" required>
+                </label>
+
+                <label for="down">
+                  Down payment (%)
+                  <input id="down" name="down" type="number" min="0" max="100" step="any" value="20" required>
+                </label>
+
+                <label for="interest">
+                  Yearly interest rate (%)
+                  <input id="interest" name="interest" type="number" min="0" max="30" step="any" value="6.5" required>
+                </label>
+
+                <label for="term">
+                  Loan term (years)
+                  <input id="term" name="term" type="number" min="1" max="50" step="1" value="30" required>
+                </label>
+              </div>
+
+              <h4>Additional monthly costs</h4>
+
+              <div class="controls">
+                <label for="tax">Property tax ($)
+                  <input id="tax" name="tax" type="number" min="0" max="1000000" step="any" inputmode="numeric" value="0" required>
+                </label>
+                <label for="insurance">Homeowners insurance ($)
+                  <input id="insurance" name="insurance" type="number" min="0" max="1000000" step="any" inputmode="numeric" value="0" required>
+                </label>
+                <label for="hoa">HOA or condo fee ($)
+                  <input id="hoa" name="hoa" type="number" min="0" max="1000000" step="any" inputmode="numeric" value="0" required>
+                </label>
+                <label for="maintenance">Maintenance reserve ($)
+                  <input id="maintenance" name="maintenance" type="number" min="0" max="1000000" step="any" inputmode="numeric" value="0" required>
+                </label>
+                <label for="pmi">Mortgage insurance ($)
+                  <input id="pmi" name="pmi" type="number" min="0" max="1000000" step="any" inputmode="numeric" value="0" required>
+                </label>
+              </div>
+
+              <button type="submit">Calculate mortgage estimate</button>
+            </form>
+
+            <div id="mortgageResult" class="result" role="status" aria-live="polite">
+              Enter your assumptions and select Calculate mortgage estimate.
+            </div>
+
+            <p class="help">
+              Excludes closing costs, transfer taxes, special assessments, and any costs you leave out.
+            </p>
+          </section>
+        </div>
+      </section>
+
+      <section id="method" aria-labelledby="methodHeading">
+        <h2 id="methodHeading">Understanding the numbers</h2>
+
+        <div class="method-grid">
+          <details class="method">
+            <summary>What does median mean?</summary>
+            <p>
+              The middle value in an ordered set. Half fall below it and half above. It differs from an average because extreme high or low values do not skew the result.
+            </p>
+          </details>
+
+          <details class="method">
+            <summary>What does gross rent include?</summary>
+            <p>
+              Contract rent plus the estimated monthly cost of tenant-paid utilities (electricity, gas, water, and sewer) and fuels. It reflects actual costs paid by surveyed households during the five-year survey window, not today's asking rents.
+            </p>
+          </details>
+
+          <details class="method">
+            <summary>What does the 30 percent benchmark mean?</summary>
+            <p>
+              The annual gross income that would make median monthly rent equal exactly 30 percent of pre-tax income. It is a standard public policy benchmark, not a personal guarantee of housing comfort or landlord approval.
+            </p>
+          </details>
+
+          <details class="method">
+            <summary>Why margins of error?</summary>
+            <p>
+              Census estimates are based on probability samples, not full counts. A $1,500 rent with a $50 margin of error means there is a 90 percent probability that the true median lies between $1,450 and $1,550.
+            </p>
+          </details>
+
+          <details class="method">
+            <summary>What is the current market rent figure?</summary>
+            <p>
+              It comes from the Zillow Observed Rent Index (ZORI), a monthly smoothed measure of asking rents across available rental properties in each county. It reflects the open market today, whereas Census ACS is a 5-year survey window ending in 2024.
+            </p>
+            <p>
+              Zillow does not publish figures for jurisdictions with insufficient listing counts. In Maryland, Kent and Somerset counties typically have no ZORI estimate.
+            </p>
+          </details>
+
+          <details class="method">
+            <summary>What is renter household income?</summary>
+            <p>
+              From ACS table B25119, this is the median annual income of households that rent their primary home, rather than all households. Across Maryland, renter median income is significantly lower than homeowner and overall household medians.
+            </p>
+          </details>
+
+          <details class="method">
+            <summary>What can historical trends tell us?</summary>
+            <p>
+              Changes across the 2010 to 2014, 2015 to 2019, and 2020 to 2024 survey windows indicate shifts in nominal dollars. They show independent five-year cross-sections rather than tracking individual households over time.
+            </p>
+          </details>
+
+          <details class="method">
+            <summary>How is renter housing cost burden calculated?</summary>
+            <p>
+              From ACS table B25070, it calculates the percentage of surveyed renter households whose gross rent represents 30 percent or more of household income. Households where cost burden cannot be calculated (such as those reporting zero or negative income, or paying no cash rent) are excluded from the denominator. Small differences between counties are sample variations and not statistically proven rankings.
+            </p>
+          </details>
+
+          <details class="method">
+            <summary>What does the refresh date mean?</summary>
+            <p>
+              The date this application retrieved the Census and Zillow datasets, not the original release date of the Census Bureau tables.
+            </p>
+          </details>
+
+          <details class="method">
+            <summary>Technical calculations and data references</summary>
+            <p>
+              Census median rent: table B25064. All-household median income: table B19013. Renter median income: table B25119 (variable 003E). Owner-occupied home value: table B25077. Renter cost burden: table B25070 (categories 007 through 010 divided by total computable renters). Market rent: Zillow ZORI county-level smoothed seasonally adjusted index.
+            </p>
+            <p>
+              30% income benchmark: monthly rent × 12 ÷ 0.30. Personal rent share: monthly rent × 12 ÷ visitor income × 100.
+            </p>
+          </details>
+        </div>
+
+        <h3 class="sec">Sources</h3>
+
+        <ul class="links">
+          <li>
+            <a href="https://www.census.gov/programs-surveys/acs/data/data-via-api.html" target="_blank" rel="noopener">
+              Census ACS API documentation<span class="sr-only"> (opens in new tab)</span>
+            </a>
+          </li>
+          <li>
+            <a href="https://www.zillow.com/research/data/" target="_blank" rel="noopener">
+              Zillow Research housing data<span class="sr-only"> (opens in new tab)</span>
+            </a>
+          </li>
+          <li>
+            <a href="https://www.zillow.com/research/methodology-zori-repeat-rent-27092/" target="_blank" rel="noopener">
+              ZORI methodology<span class="sr-only"> (opens in new tab)</span>
+            </a>
+          </li>
+          <li>
+            <a href="https://mgaleg.maryland.gov/" target="_blank" rel="noopener">
+              Maryland General Assembly<span class="sr-only"> (opens in new tab)</span>
+            </a>
+          </li>
+        </ul>
+
+        <h3 class="sec">Privacy</h3>
+
+        <p>
+          No analytics, cookies, or tracking scripts. Two web fonts load from Google Fonts. Income and calculator entries stay strictly in your local browser tab. If you subscribe to Rent Watch, your email address is handled by Buttondown and never shared.
+        </p>
+      </section>
+
+      <section id="about" class="about" aria-labelledby="aboutHeading">
+        <h2 id="aboutHeading">Why this exists</h2>
+
+        <p>
+          I am Ida Akiwumi, a UX designer. After being laid off last summer, I started thinking about how I could use my UX and data skills to build something useful beyond my next job.
+        </p>
+
+        <p>
+          Housing affordability affects communities across Maryland, but understanding how much rent burdens people can mean digging through multiple Census tables and overlapping survey periods. I wanted to make that information easier to find, compare, and explore in one place.
+        </p>
+
+        <p>
+          So I built Maryland Housing Burden, a free tool comparing renter burden across all 24 Maryland jurisdictions, alongside data that helps put reported rents into context.
+        </p>
+
+        <p>
+          The data refreshes automatically every month. No ads, no tracking, no cookies.
+        </p>
+
+        <p>
+          If this tool helped you, there is a coffee link at the bottom of the page. If you are hiring for UX, design systems, or analytics engineering roles, you can find more of my work on LinkedIn and GitHub.
+        </p>
+
+        <p class="about-links">
+          <a href="https://www.linkedin.com/in/idaa11/" target="_blank" rel="noopener">
+            LinkedIn<span class="sr-only"> (opens in new tab)</span>
+          </a>
+          <span aria-hidden="true">·</span>
+          <a href="https://github.com/IdaAkiwumi" target="_blank" rel="noopener">
+            GitHub<span class="sr-only"> (opens in new tab)</span>
+          </a>
+          <span aria-hidden="true">·</span>
+          <a href="#support">Support the project</a>
+        </p>
+      </section>
+
+      <section id="newsletter" class="newsletter" aria-labelledby="newsletterHeading">
+        <h2 id="newsletterHeading">Rent Watch: one email a month</h2>
+
+        <p class="section-dek">
+          A specific county finding, any notable market shift, and a link to the site with the highlighted county preloaded. No ads, no tracking, unsubscribe anytime.
+        </p>
+
+        <form
+          class="newsletter-form"
+          action="https://buttondown.email/api/emails/embed-subscribe/mdhousingburden"
+          method="post"
+          target="_blank"
+        >
+          <label for="newsletter-email" class="sr-only">Email address</label>
+          <input
+            id="newsletter-email"
+            name="email"
+            type="email"
+            placeholder="you@example.com"
+            autocomplete="email"
+            required
+          >
+          <input type="hidden" name="embed" value="1">
+          <button type="submit">Subscribe to Rent Watch</button>
+        </form>
+
+        <p class="newsletter-note">
+          Email is stored by Buttondown, not by me, and never sold or shared.
+        </p>
+      </section>
+
+      <section id="support" class="support" aria-labelledby="supportHeading">
+        <h2 id="supportHeading">Support this project</h2>
+
+        <p class="section-dek">
+          Free, no ads, no tracking. If it saved you time, you can help keep it going.
+        </p>
+
+        <div class="support-grid">
+          <a class="support-link" href="https://github.com/sponsors/IdaAkiwumi" target="_blank" rel="noopener">
+            <span class="support-icon" aria-hidden="true">♥</span>
+            <span class="support-text">
+              <b>Sponsor on GitHub</b>
+              <i>Recurring support<span class="sr-only"> (opens in new tab)</span></i>
+            </span>
+          </a>
+
+          <a class="support-link" href="https://www.paypal.com/paypalme/iakiwumi" target="_blank" rel="noopener">
+            <span class="support-icon" aria-hidden="true">☕</span>
+            <span class="support-text">
+              <b>Donate via PayPal</b>
+              <i>One-time gift<span class="sr-only"> (opens in new tab)</span></i>
+            </span>
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        An independent public interest project by
+        <a href="https://www.linkedin.com/in/idaa11/" target="_blank" rel="noopener">Ida Akiwumi</a>.
+        Not affiliated with Maryland government or the Census Bureau.
+      </p>
+      <p class="footer-status">
+        <span id="status" role="status" class="status">Loading…</span>
+      </p>
+    </footer>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
