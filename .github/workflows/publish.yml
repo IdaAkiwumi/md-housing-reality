@@ -7,6 +7,12 @@ on:
     # 15th of each month at 08:23 UTC
     - cron: "23 8 15 * *"
   workflow_dispatch:
+    inputs:
+      send_newsletter:
+        description: "Send monthly Rent Watch newsletter (skipped if already sent this month)"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -15,7 +21,7 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'push' }}
 
 jobs:
   build:
@@ -33,9 +39,12 @@ jobs:
         run: python scripts/fetch_data.py
 
       - name: Validate the payload
-        run: python -m pytest tests/ -q || true
+        env:
+          CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
+        run: python -m unittest discover -s tests -v
 
       - name: Send monthly Rent Watch email
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.send_newsletter == true)
         env:
           BUTTONDOWN_API_KEY: ${{ secrets.BUTTONDOWN_API_KEY }}
         run: python scripts/send_newsletter.py

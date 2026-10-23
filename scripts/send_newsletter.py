@@ -3,10 +3,15 @@
 Read docs/data.json, pick one county finding, and send a monthly
 Rent Watch email via the Buttondown API.
 
+Includes a monthly deduplication guard that queries Buttondown before
+sending so at most one Rent Watch email can go out per calendar month
+(unless --force is explicitly passed).
+
 Requires BUTTONDOWN_API_KEY in the environment.
 Get one at https://buttondown.com/settings/api
 """
 
+import argparse
 import json
 import os
 import sys
@@ -14,17 +19,30 @@ from datetime import datetime, timezone
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-BUTTONDOWN_API_KEY = os.environ.get("BUTTONDOWN_API_KEY", "").strip()
-if not BUTTONDOWN_API_KEY:
-    print(
-        "BUTTONDOWN_API_KEY is not set. Add it as a repository secret at "
-        "Settings, Secrets and variables, Actions.",
-        file=sys.stderr,
-    )
-    sys.exit(1)
-
 DATA_JSON = os.path.join("docs", "data.json")
 SITE_URL = "https://IdaAkiwumi.github.io/md-housing-reality/"
+BUTTONDOWN_EMAILS_URL = "https://api.buttondown.com/v1/emails"
+
+# Statuses in Buttondown that mean an email has already gone out or is queued
+SENT_OR_QUEUED_STATUSES = {
+    "sent",
+    "about_to_send",
+    "in_flight",
+    "scheduled",
+    "imported",
+}
+
+
+def get_api_key():
+    api_key = os.environ.get("BUTTONDOWN_API_KEY", "").strip()
+    if not api_key:
+        print(
+            "BUTTONDOWN_API_KEY is not set. Add it as a repository secret at "
+            "Settings, Secrets and variables, Actions.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    return api_key
 
 
 def dollars(value):
@@ -49,11 +67,14 @@ def pick_finding(rows):
     return top_burden, biggest_gap
 
 
-def build_email(payload):
+def build_email(payload, now=None):
+    if now is None:
+        now = datetime.now(timezone.utc)
+
     rows = payload["rows"]
     fetched_at = (
         payload.get("metadata", {}).get("fetched_at")
-        or datetime.now(timezone.utc).isoformat(timespec="seconds")
+        or now.isoformat(timespec="seconds")
     )
 
     latest_year = max(r["year"] for r in rows)
@@ -61,7 +82,7 @@ def build_email(payload):
 
     top_burden, biggest_gap = pick_finding(latest)
 
-    month = datetime.now(timezone.utc).strftime("%B %Y")
+    month = now.strftime("%B %Y")
     # Colon instead of em dash per your writing style.
     subject = f"Rent Watch: {month}"
 
@@ -109,16 +130,85 @@ def build_email(payload):
         f"[See the full data for every county]({SITE_URL})",
         "",
         f"Data retrieved: {fetched_at}",
-        
     ]
 
     return subject, "\n".join(lines)
 
 
-def send_email(subject, body):
-    url = "https://api.buttondown.com/v1/emails"
+def find_existing_monthly_email(emails, subject, year_month):
+    """
+    Return the existing email dict if a Rent Watch newsletter has already
+    been sent or queued for the target subject or YYYY-MM month, else None.
+    Drafts and failed/deleted emails are ignored.
+    """
+    normalized_subject = subject.strip().lower()
+
+    for item in emails:
+        status = (item.get("status") or "").strip().lower()
+        if status not in SENT_OR_QUEUED_STATUSES:
+            continue
+
+        item_subject = (item.get("subject") or "").strip()
+        if item_subject.lower() == normalized_subject:
+            return item
+
+        if "rent watch" in item_subject.lower():
+            for date_field in ("publish_date", "creation_date"):
+                date_val = (item.get(date_field) or "").strip()
+                if date_val.startswith(year_month):
+                    return item
+
+    return None
+
+
+def fetch_existing_emails(api_key, max_pages=10):
+    """
+    Fetch existing emails from Buttondown to verify whether this month's
+    edition has already been sent. Fails closed on API/network errors so
+    we never accidentally send a duplicate when Buttondown is unreachable.
+    """
     headers = {
-        "Authorization": f"Token {BUTTONDOWN_API_KEY}",
+        "Authorization": f"Token {api_key}",
+        "Accept": "application/json",
+    }
+    url = f"{BUTTONDOWN_EMAILS_URL}?page_size=100"
+    emails = []
+    pages = 0
+
+    while url and pages < max_pages:
+        pages += 1
+        req = Request(url, headers=headers, method="GET")
+        try:
+            with urlopen(req, timeout=30) as r:
+                body = json.loads(r.read().decode("utf-8"))
+        except HTTPError as exc:
+            print(
+                f"Buttondown API error while checking existing emails: "
+                f"{exc.code} {exc.read().decode('utf-8', 'replace')}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        except URLError as exc:
+            print(
+                f"Network error while checking existing emails: {exc}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
+        if isinstance(body, list):
+            emails.extend(body)
+            break
+
+        results = body.get("results") or []
+        emails.extend(results)
+        url = body.get("next")
+
+    return emails
+
+
+def send_email(api_key, subject, body):
+    headers = {
+        "Authorization": f"Token {api_key}",
         "Content-Type": "application/json",
         "X-Buttondown-Live-Dangerously": "true",
     }
@@ -128,7 +218,7 @@ def send_email(subject, body):
         "status": "about_to_send",
     }
     req = Request(
-        url,
+        BUTTONDOWN_EMAILS_URL,
         data=json.dumps(payload).encode("utf-8"),
         headers=headers,
         method="POST",
@@ -136,7 +226,9 @@ def send_email(subject, body):
     try:
         with urlopen(req, timeout=30) as r:
             response = json.loads(r.read().decode("utf-8"))
-            print(f"Rent Watch sent. Email ID: {response.get('id', 'unknown')} - send_newsletter.py:139")
+            print(
+                f"Rent Watch sent. Email ID: {response.get('id', 'unknown')} - send_newsletter.py"
+            )
     except HTTPError as exc:
         print(
             f"Buttondown API error: {exc.code} {exc.read().decode('utf-8', 'replace')}",
@@ -144,15 +236,63 @@ def send_email(subject, body):
         )
         sys.exit(1)
     except URLError as exc:
-        print(f"Network error: {exc} - send_newsletter.py:147", file=sys.stderr)
+        print(f"Network error: {exc} - send_newsletter.py", file=sys.stderr)
         sys.exit(1)
 
 
-def main():
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(
+        description="Send the monthly Rent Watch newsletter via Buttondown."
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Build the email and check duplicate status without sending.",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Bypass the once-per-month duplicate check and send anyway.",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv=None):
+    args = parse_args(argv)
+    now = datetime.now(timezone.utc)
+    year_month = now.strftime("%Y-%m")
+
     with open(DATA_JSON, encoding="utf-8") as fh:
         payload = json.load(fh)
-    subject, body = build_email(payload)
-    send_email(subject, body)
+
+    subject, body = build_email(payload, now=now)
+
+    if args.dry_run and not os.environ.get("BUTTONDOWN_API_KEY", "").strip():
+        print(f"[DRY RUN] Subject: {subject}\n\n{body}")
+        return
+
+    api_key = get_api_key()
+
+    if not args.force:
+        existing_emails = fetch_existing_emails(api_key)
+        duplicate = find_existing_monthly_email(
+            existing_emails, subject=subject, year_month=year_month
+        )
+        if duplicate:
+            print(
+                f"Skipping send: Rent Watch for {year_month} was already "
+                f"sent or queued (id={duplicate.get('id', 'unknown')}, "
+                f"status={duplicate.get('status', 'unknown')}, "
+                f"subject={duplicate.get('subject', '')!r})."
+            )
+            return
+
+    if args.dry_run:
+        print(f"[DRY RUN] No existing email for {year_month}. Would send:\n")
+        print(f"Subject: {subject}\n\n{body}")
+        return
+
+    send_email(api_key, subject, body)
 
 
 if __name__ == "__main__":
