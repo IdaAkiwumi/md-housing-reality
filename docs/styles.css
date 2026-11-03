@@ -2397,3 +2397,20 @@ footer a {
   margin-top: 0.2rem;
   line-height: 1.2;
 }
+
+/* Renter rent share status color states (theme-aware) */
+.insp-stat-sub.afford-state-good { color: #15803d; }
+.insp-stat-sub.afford-state-moderate { color: #b45309; }
+.insp-stat-sub.afford-state-severe { color: #b91c1c; }
+.insp-stat-sub.afford-state-neutral { color: var(--ink-2); }
+
+html[data-theme="dark"] .insp-stat-sub.afford-state-good { color: #4ade80; }
+html[data-theme="dark"] .insp-stat-sub.afford-state-moderate { color: #fbbf24; }
+html[data-theme="dark"] .insp-stat-sub.afford-state-severe { color: #f87171; }
+
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]):not([data-theme="dark"]) .insp-stat-sub.afford-state-good { color: #4ade80; }
+  html:not([data-theme="light"]):not([data-theme="dark"]) .insp-stat-sub.afford-state-moderate { color: #fbbf24; }
+  html:not([data-theme="light"]):not([data-theme="dark"]) .insp-stat-sub.afford-state-severe { color: #f87171; }
+}
+

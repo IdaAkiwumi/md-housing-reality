@@ -815,23 +815,31 @@ function updateMapInspector(countyId) {
     $("inspMarketRent").textContent = "Not available";
   }
 
+    const affordEl = $("inspShareAfford");
+  affordEl.classList.remove(
+    "afford-state-good",
+    "afford-state-moderate",
+    "afford-state-severe",
+    "afford-state-neutral"
+  );
+
   if (comparedIncome && comparedIncome > 0 && row.rent) {
     const shareVal = (row.rent * 12 / comparedIncome) * 100;
     $("inspShare").textContent = `${shareVal.toFixed(1)}%`;
     if (shareVal <= 30) {
-      $("inspShareAfford").textContent = "Affordable (under 30%)";
-      $("inspShareAfford").style.color = "#15803d";
+      affordEl.textContent = "Affordable (under 30%)";
+      affordEl.classList.add("afford-state-good");
     } else if (shareVal <= 40) {
-      $("inspShareAfford").textContent = "Moderately cost burdened";
-      $("inspShareAfford").style.color = "#b45309";
+      affordEl.textContent = "Moderately cost burdened";
+      affordEl.classList.add("afford-state-moderate");
     } else {
-      $("inspShareAfford").textContent = "Severely cost burdened (>40%)";
-      $("inspShareAfford").style.color = "#b91c1c";
+      affordEl.textContent = "Severely cost burdened (>40%)";
+      affordEl.classList.add("afford-state-severe");
     }
   } else {
     $("inspShare").textContent = "—";
-    $("inspShareAfford").textContent = "Enter your income above";
-    $("inspShareAfford").style.color = "var(--ink-2)";
+    affordEl.textContent = "Enter your income above";
+    affordEl.classList.add("afford-state-neutral");
   }
 }
 
@@ -851,7 +859,7 @@ async function initMarylandMap() {
         mapPathsData = await res.json();
       }
     } catch (err) {
-      console.warn("Could not load marylandmappaths.json: - app.js:854", err);
+      console.warn("Could not load marylandmappaths.json: - app.js:862", err);
       return;
     }
   }
@@ -1893,7 +1901,7 @@ async function start() {
       });
     }
   } catch (error) {
-    console.error("Boot error: - app.js:1896", error);
+    console.error("Boot error: - app.js:1904", error);
     data = null;
     $("status").textContent =
       "Data failed to load. Check that data.json exists and open via a web server.";
