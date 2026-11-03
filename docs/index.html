@@ -142,7 +142,7 @@
           </span>
           <span class="theme-icon-slot opt-dark" aria-hidden="true">
             <svg class="theme-icon-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 3a6 6 0 0 0 9 9 9 0 1 1-9-9Z"></path>
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
             </svg>
           </span>
           <span class="theme-pill-slider" aria-hidden="true"></span>
@@ -220,25 +220,21 @@
         <b id="hitsCountyName">—</b>
       </div>
 
-      <!-- Stat 1: Census Rent -->
       <div class="hit">
         <b id="hitRent">—</b>
         <span>Census median rent</span>
       </div>
 
-      <!-- Stat 2: Current Market Rent -->
       <div class="hit">
         <b id="hitMarketRent">—</b>
         <span>Current market rent</span>
       </div>
 
-      <!-- Stat 3: Average of County Medians -->
       <div class="hit">
         <b id="hitMdAvg">—</b>
         <span>Average of county medians</span>
       </div>
 
-      <!-- Stat 4: Income for 30% Benchmark -->
       <div class="hit">
         <b id="hitBenchmark">—</b>
         <span>Income for 30% benchmark</span>
@@ -252,7 +248,7 @@
         </div>
         <div class="micro-bar-wrap" role="img" id="hitBurdenBarWrap" aria-label="Renter cost burden proportion bar">
           <div class="micro-bar-track">
-            <div class="micro-bar-fill" id="hitBurdenFill" style="width: 0%;"></div>
+            <div class="micro-bar-fill" id="hitBurdenFill"></div>
           </div>
           <div class="micro-bar-scale" aria-hidden="true">
             <span>0%</span>
@@ -262,7 +258,6 @@
         <span>Renters paying 30%+</span>
       </div>
 
-      <!-- Stat 6: Visitor Household Income -->
       <div class="hit personal-first">
         <b id="hitIncome">$65,000</b>
         <span>Your household income</span>
@@ -276,7 +271,9 @@
         </div>
         <div class="micro-bullet-wrap" role="img" id="hitShareBulletWrap" aria-label="Rent share of income bullet chart">
           <div class="micro-bullet-track" id="hitShareTrack">
-            <div class="micro-bullet-fill" id="hitShareFill" style="width: 0%;"></div>
+            <div class="micro-bullet-fill-clip">
+              <div class="micro-bullet-fill" id="hitShareFill"></div>
+            </div>
             <div class="micro-bullet-target" id="hitShareTarget" title="Standard 30% affordability benchmark" style="left: 30%;">
               <span class="bullet-marker-line"></span>
               <span class="bullet-marker-label">30%</span>
@@ -327,10 +324,8 @@
           </p>
         </form>
 
-        <!-- Renter cost burden story card for selected county -->
         <div id="burdenStory" class="burden-story" hidden></div>
 
-        <!-- Side-by-side Dashboard Cards Grid -->
         <div class="dashboard-top-grid">
           <!-- Census vs. Zillow Market Rent Comparison -->
           <div id="rentComparisonBox" class="rent-comparison-card" aria-labelledby="rentCompHeading">
@@ -346,7 +341,7 @@
                   <b id="compCensusRent">—</b>
                 </div>
                 <div class="comp-bar-shell">
-                  <div class="comp-bar-census" id="compCensusBar" style="width: 0%;"></div>
+                  <div class="comp-bar-census" id="compCensusBar"></div>
                 </div>
                 <p class="comp-detail" id="compCensusDetail">
                   Includes tenant-paid utilities. 5-year survey window ending 2024.
@@ -359,7 +354,7 @@
                   <b id="compZillowRent">—</b>
                 </div>
                 <div class="comp-bar-shell">
-                  <div class="comp-bar-zillow" id="compZillowBar" style="width: 0%;"></div>
+                  <div class="comp-bar-zillow" id="compZillowBar"></div>
                 </div>
                 <p class="comp-detail" id="compZillowDetail">
                   Zillow Observed Rent Index (ZORI) monthly asking rent for available market listings.
@@ -375,11 +370,14 @@
               <span class="panel-tag">20% to 80% axis</span>
             </div>
 
-            <!-- SVG Distribution Chart -->
             <div class="distribution-chart-wrap" id="distributionChartWrap" role="region" aria-label="Maryland county renter burden distribution chart" tabindex="0">
-              <svg id="burdenDistributionSvg" viewBox="0 0 960 140" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
-                <!-- Dynamically rendered via app.js -->
-              </svg>
+              <svg
+                id="burdenDistributionSvg"
+                viewBox="0 0 960 140"
+                preserveAspectRatio="xMidYMid meet"
+                role="group"
+                aria-label="Renter cost burden by Maryland county. Use Tab to move between county points, Enter or Space to select a county."
+              ></svg>
             </div>
             <div class="distribution-scroll-hint" aria-hidden="true">⇄ Swipe chart to see all 24 jurisdictions</div>
 
@@ -397,10 +395,9 @@
                 <span class="map-kicker">Geographic visualization</span>
                 <span class="map-selected-pill" id="mapSelectedBadge">Selected: <b id="mapSelectedBadgeName">Allegany County</b></span>
               </div>
-              <h3 id="mapHeading" class="map-title">Maryland County Housing & Affordability Map</h3>
+              <h3 id="mapHeading" class="map-title">Maryland County Housing &amp; Affordability Map</h3>
             </div>
 
-            <!-- Metric Layer Switcher -->
             <div class="map-controls-bar" role="toolbar" aria-label="Map data metric layers">
               <div class="map-metric-buttons" id="mapMetricButtons">
                 <button type="button" class="map-metric-btn active" data-metric="burden_percent">
@@ -422,12 +419,9 @@
             </div>
           </div>
 
-          <!-- Map Workspace: Map on the left/main, County Snapshot on the side -->
           <div class="map-workspace" id="mapWorkspace">
-            <!-- Main Map Column -->
             <div class="map-main-col">
               <div class="map-stage" id="mapStage">
-                <!-- Floating Zoom Controls Toolbar -->
                 <div class="map-zoom-controls" role="toolbar" aria-label="Map zoom controls">
                   <button type="button" class="map-zoom-btn" id="mapZoomIn" aria-label="Zoom in" title="Zoom in (+)">
                     <span aria-hidden="true">+</span>
@@ -444,7 +438,6 @@
                 <div class="map-svg-wrap" id="mapSvgWrap" role="region" aria-label="Interactive Maryland county map. Scroll or use buttons to zoom, click and drag to pan when zoomed.">
                   <svg id="marylandMapSvg" viewBox="0 0 960 520" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="mapHeading">
                     <defs>
-                      <!-- Pattern for counties missing Zillow data -->
                       <pattern id="diagonalHatch" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
                         <line x1="0" y1="0" x2="0" y2="8" stroke="#9ca3af" stroke-width="2" />
                       </pattern>
@@ -455,7 +448,6 @@
                     <g id="mapSelectionGroup" class="map-selection" pointer-events="none"></g>
                   </svg>
 
-                  <!-- Floating Tooltip on Hover -->
                   <div class="map-floating-tooltip" id="mapTooltip" role="tooltip" hidden>
                     <div class="tooltip-header">
                       <b class="tooltip-name" id="tipCountyName">—</b>
@@ -467,7 +459,6 @@
                   </div>
                 </div>
 
-                <!-- Map Legend and Summary Bar -->
                 <div class="map-legend-bar">
                   <div class="legend-scale-block">
                     <div class="legend-title-row">
@@ -485,7 +476,6 @@
               </div>
             </div>
 
-            <!-- Side Inspector Card for Inspected / Selected County Snapshot -->
             <aside class="map-inspector-sidebar" id="mapInspector" aria-label="County snapshot inspector">
               <div class="inspector-summary">
                 <div class="inspector-badge-row">
@@ -524,7 +514,6 @@
           </div>
         </section>
 
-        <!-- IMPROVEMENT 2: Historical Trends with Dual-Income Metric Separation -->
         <div id="trends" aria-labelledby="trendsHeading">
           <h3 id="trendsHeading" class="sub-heading">
             How have the estimates changed over time?

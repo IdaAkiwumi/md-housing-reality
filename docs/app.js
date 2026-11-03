@@ -256,6 +256,23 @@ function computeStatewideAverages() {
   return { avgRent, count: latestRows.length };
 }
 
+/* ---------- SVG path sanitization (fixes malformed arc flag console errors) ---------- */
+function sanitizeSvgPath(d) {
+  if (!d || typeof d !== "string") return "";
+  // Arc command: A rx ry x-axis-rotation large-arc-flag sweep-flag x y
+  // Both flags must be 0 or 1. If map data provides a non-0/1 value,
+  // the browser logs an error and the path fails to render.
+  // Repair by replacing invalid flags with 0.
+  return d.replace(
+    /A([\s,]+)([-\d.eE+]+)([\s,]+)([-\d.eE+]+)([\s,]+)([-\d.eE+]+)([\s,]+)([^\s,]+)([\s,]+)([^\s,]+)/g,
+    (match, s1, rx, s2, ry, s3, xrot, s4, flag1, s5, flag2) => {
+      const f1 = /^[01]$/.test(flag1) ? flag1 : "0";
+      const f2 = /^[01]$/.test(flag2) ? flag2 : "0";
+      return `A${s1}${rx}${s2}${ry}${s3}${xrot}${s4}${f1}${s5}${f2}`;
+    }
+  );
+}
+
 /* ---------- YELLOW SUMMARY BAR & 2 MICROCHARTS ---------- */
 function updateStatBand() {
   if (!data) return;
@@ -263,7 +280,6 @@ function updateStatBand() {
   const row = latestRowFor(selectedCountyId);
   if (!row) return;
 
-  // Header and standard number tiles
   $("hitsCountyName").textContent = row.name;
   $("hitRent").textContent = dollars(row.rent);
   $("hitMarketRent").textContent = row.market_rent_now
@@ -274,19 +290,19 @@ function updateStatBand() {
   const md = computeStatewideAverages();
   if (md) $("hitMdAvg").textContent = dollars(md.avgRent);
 
-  // MICROCHART 1: Renter Cost Burden (Horizontal Proportion Bar on 0-100% scale)
+  // MICROCHART 1: Renter Cost Burden — transform: scaleX for composited animation
   const burdenVal = row.burden_percent;
   if (burdenVal !== null && Number.isFinite(burdenVal)) {
     $("hitBurden").textContent = percentShort(burdenVal);
     const clampedWidth = Math.max(0, Math.min(100, burdenVal));
-    $("hitBurdenFill").style.width = `${clampedWidth.toFixed(1)}%`;
+    $("hitBurdenFill").style.transform = `scaleX(${(clampedWidth / 100).toFixed(3)})`;
     $("hitBurdenBarWrap").setAttribute(
       "aria-label",
       `Renter cost burden in ${row.name}: ${percentShort(burdenVal)} of surveyed renter households spend 30% or more of income on rent.`
     );
   } else {
     $("hitBurden").textContent = "—";
-    $("hitBurdenFill").style.width = "0%";
+    $("hitBurdenFill").style.transform = "scaleX(0)";
     $("hitBurdenBarWrap").setAttribute("aria-label", "Renter cost burden not available");
   }
 
@@ -294,7 +310,7 @@ function updateStatBand() {
   if (comparedIncome === null || comparedIncome <= 0) {
     $("hitIncome").textContent = "—";
     $("hitShare").textContent = "—";
-    $("hitShareFill").style.width = "0%";
+    $("hitShareFill").style.transform = "scaleX(0)";
     $("hitShareTarget").style.display = "none";
     $("hitShareBulletWrap").setAttribute(
       "aria-label",
@@ -305,19 +321,17 @@ function updateStatBand() {
 
   $("hitIncome").textContent = dollars(comparedIncome);
 
-  // MICROCHART 2: Rent Share Bullet Chart with 30% Benchmark Marker
+  // MICROCHART 2: Rent Share Bullet Chart
   const share = (row.rent * 12 / comparedIncome) * 100;
   $("hitShare").textContent = percentShort(share);
 
-  // The displayed bullet scale spans 0% to 100%
-  // 30% benchmark marker sits exactly at 30% position
   $("hitShareTarget").style.display = "block";
   $("hitShareTarget").style.left = "30%";
 
   if (share > 100) {
-    $("hitShareFill").style.width = "100%";
+    $("hitShareFill").style.transform = "scaleX(1)";
   } else {
-    $("hitShareFill").style.width = `${Math.max(0, share).toFixed(1)}%`;
+    $("hitShareFill").style.transform = `scaleX(${(Math.max(0, share) / 100).toFixed(3)})`;
   }
 
   $("hitShareBulletWrap").setAttribute(
@@ -326,7 +340,7 @@ function updateStatBand() {
   );
 }
 
-/* ---------- MAIN IMPROVEMENT 3: Census vs. Zillow Rental Comparison ---------- */
+/* ---------- Census vs. Zillow Rental Comparison ---------- */
 function updateRentComparisonCard() {
   if (!data) return;
   const countyId = $("county").value;
@@ -336,29 +350,28 @@ function updateRentComparisonCard() {
   $("rentCompHeading").textContent = `${row.name} Rental Comparison`;
   $("compCensusRent").textContent = dollars(row.rent);
 
-  // Baseline scale for visual bars (maximum benchmark $2,800 to keep relative perspective)
   const maxAxis = 2800;
   const censusWidth = Math.min(100, (row.rent / maxAxis) * 100);
-  $("compCensusBar").style.width = `${censusWidth.toFixed(1)}%`;
+  $("compCensusBar").style.transform = `scaleX(${(censusWidth / 100).toFixed(3)})`;
   $("compCensusDetail").textContent =
     `Census ACS 5-year median gross rent ($${row.rent_moe ? `±$${Math.round(row.rent_moe)} MOE` : ""}), including tenant-paid utilities.`;
 
   if (row.market_rent_now) {
     $("compZillowRent").textContent = dollars(row.market_rent_now);
     const zillowWidth = Math.min(100, (row.market_rent_now / maxAxis) * 100);
-    $("compZillowBar").style.width = `${zillowWidth.toFixed(1)}%`;
+    $("compZillowBar").style.transform = `scaleX(${(zillowWidth / 100).toFixed(3)})`;
     $("compZillowBar").style.background = "var(--zillow)";
     $("compZillowDetail").textContent =
       "Zillow Observed Rent Index (ZORI) monthly asking rent for available market listings.";
   } else {
     $("compZillowRent").textContent = "Not available";
-    $("compZillowBar").style.width = "0%";
+    $("compZillowBar").style.transform = "scaleX(0)";
     $("compZillowDetail").textContent =
       `Zillow does not publish the Rent Index for ${row.name} due to low rental listing volume. Census median rent is shown.`;
   }
 }
 
-/* ---------- MAIN IMPROVEMENT 1: Statewide Renter Burden Distribution Dot-Plot ---------- */
+/* ---------- Statewide Renter Burden Distribution Dot-Plot ---------- */
 function renderBurdenDistribution() {
   const svg = $("burdenDistributionSvg");
   if (!svg || !data) return;
@@ -367,7 +380,6 @@ function renderBurdenDistribution() {
   const rows = data.rows.filter(r => r.year === latestYear && r.burden_percent !== null);
   const selectedCountyId = $("county").value;
 
-  // Clear previous SVG contents
   while (svg.firstChild) svg.removeChild(svg.firstChild);
 
   const width = 960;
@@ -381,7 +393,6 @@ function renderBurdenDistribution() {
   const maxPct = 80;
   const getX = pct => padLeft + ((pct - minPct) / (maxPct - minPct)) * chartWidth;
 
-  // Background subtle guide lines at 20, 30 (benchmark), 40, 50, 60, 70, 80
   const ticks = [20, 30, 40, 50, 60, 70, 80];
   ticks.forEach(t => {
     const x = getX(t);
@@ -409,7 +420,6 @@ function renderBurdenDistribution() {
     svg.appendChild(label);
   });
 
-  // Base axis line
   const baseLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
   baseLine.setAttribute("x1", padLeft);
   baseLine.setAttribute("x2", width - padRight);
@@ -419,21 +429,18 @@ function renderBurdenDistribution() {
   baseLine.setAttribute("stroke-width", "2");
   svg.appendChild(baseLine);
 
-  // Jitter points vertically slightly to prevent complete overlap
-  // Sort rows by burden
   const sorted = [...rows].sort((a, b) => a.burden_percent - b.burden_percent);
   let selectedPointData = null;
 
   sorted.forEach((r, idx) => {
     const x = getX(r.burden_percent);
-    // Vertical stagger around y=68
     const yOffsets = [68, 52, 82, 60, 74];
     const y = yOffsets[idx % yOffsets.length];
     const isSelected = r.id === selectedCountyId;
 
     if (isSelected) {
       selectedPointData = { r, x, y };
-      return; // Draw selected point last on top
+      return;
     }
 
     const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -477,11 +484,9 @@ function renderBurdenDistribution() {
     svg.appendChild(group);
   });
 
-  // Highlighted Selected County Point
   if (selectedPointData) {
     const { r, x, y } = selectedPointData;
 
-    // Drop line to axis
     const dropLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
     dropLine.setAttribute("x1", x);
     dropLine.setAttribute("x2", x);
@@ -492,7 +497,6 @@ function renderBurdenDistribution() {
     dropLine.setAttribute("stroke-dasharray", "2 2");
     svg.appendChild(dropLine);
 
-    // Callout badge above point
     const callout = document.createElementNS("http://www.w3.org/2000/svg", "g");
     const calloutBox = document.createElementNS("http://www.w3.org/2000/svg", "rect");
     const textWidth = Math.max(140, r.name.length * 9 + 44);
@@ -520,7 +524,6 @@ function renderBurdenDistribution() {
     callout.appendChild(calloutText);
     svg.appendChild(callout);
 
-    // Outer glow ring
     const ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     ring.setAttribute("cx", x);
     ring.setAttribute("cy", y);
@@ -530,7 +533,6 @@ function renderBurdenDistribution() {
     ring.setAttribute("stroke-width", "3");
     svg.appendChild(ring);
 
-    // Center solid circle
     const center = document.createElementNS("http://www.w3.org/2000/svg", "circle");
     center.setAttribute("cx", x);
     center.setAttribute("cy", y);
@@ -564,7 +566,7 @@ const MAP_METRICS = {
     formatter: v => (v !== null && Number.isFinite(v) ? `${v.toFixed(1)}%` : "N/A"),
     higherIsBurden: true,
     palette: [
-      { stop: 0.0, color: "#d1fae5" }, // ~35%
+      { stop: 0.0, color: "#d1fae5" },
       { stop: 0.25, color: "#fef08a" },
       { stop: 0.5, color: "#fed7aa" },
       { stop: 0.75, color: "#fb923c" },
@@ -667,7 +669,6 @@ function getColorForNormalizedValue(valNormalized, palette) {
   return palette[palette.length - 1].color;
 }
 
-/* Map Zoom and Pan State */
 const MAP_BASE_WIDTH = 960;
 const MAP_BASE_HEIGHT = 520;
 let mapZoomScale = 1.0;
@@ -843,7 +844,6 @@ async function initMarylandMap() {
 
   if (!mapSvg || !countiesGroup) return;
 
-  // Load vector paths if not loaded
   if (!mapPathsData) {
     try {
       const res = await fetch("maryland-map-paths.json", { cache: "no-cache" });
@@ -851,18 +851,16 @@ async function initMarylandMap() {
         mapPathsData = await res.json();
       }
     } catch (err) {
-      console.warn("Could not load maryland-map-paths.json:", err);
+      console.warn("Could not load marylandmappaths.json: - app.js:854", err);
       return;
     }
   }
 
   if (!mapPathsData) return;
 
-  // Clear previous elements
   while (countiesGroup.firstChild) countiesGroup.removeChild(countiesGroup.firstChild);
   while (labelsGroup.firstChild) labelsGroup.removeChild(labelsGroup.firstChild);
 
-  // Render order: ensure Baltimore County (24005) is drawn BEFORE Baltimore City (24510)
   const fipsKeys = Object.keys(mapPathsData).sort((a, b) => {
     if (a === "24510") return 1;
     if (b === "24510") return -1;
@@ -872,7 +870,8 @@ async function initMarylandMap() {
   fipsKeys.forEach(fips => {
     const item = mapPathsData[fips];
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("d", item.path);
+    // Sanitize path data to repair malformed arc flags (fixes console error)
+    path.setAttribute("d", sanitizeSvgPath(item.path));
     path.setAttribute("id", `mapCounty_${fips}`);
     path.setAttribute("data-fips", fips);
     path.setAttribute("class", "county-path");
@@ -920,10 +919,8 @@ async function initMarylandMap() {
     countiesGroup.appendChild(path);
   });
 
-  // County labels group left empty so map shapes and choropleth colors remain pristine and legible
   while (labelsGroup.firstChild) labelsGroup.removeChild(labelsGroup.firstChild);
 
-  // Metric Toggle Buttons
   const buttons = document.querySelectorAll(".map-metric-btn");
   buttons.forEach(btn => {
     btn.addEventListener("click", () => {
@@ -934,7 +931,6 @@ async function initMarylandMap() {
     });
   });
 
-  // Wire Zoom Toolbar buttons
   const zoomInBtn = $("mapZoomIn");
   const zoomOutBtn = $("mapZoomOut");
   const zoomResetBtn = $("mapZoomReset");
@@ -958,7 +954,6 @@ async function initMarylandMap() {
     });
   }
 
-  // Mouse wheel zoom
   if (svgWrap && mapSvg) {
     svgWrap.addEventListener("wheel", e => {
       e.preventDefault();
@@ -969,7 +964,6 @@ async function initMarylandMap() {
       zoomMarylandMap(factor, mouseSvgX, mouseSvgY);
     }, { passive: false });
 
-    // Drag to pan when zoomed
     svgWrap.addEventListener("pointerdown", e => {
       if (e.button !== 0) return;
       if (mapZoomScale <= 1.0) return;
@@ -1024,7 +1018,6 @@ async function initMarylandMap() {
       svgWrap.classList.remove("is-panning");
     });
 
-    // Touch pinch-to-zoom
     let initialPinchDistance = null;
     let pinchAnchor = null;
 
@@ -1064,7 +1057,6 @@ async function initMarylandMap() {
       }
     }, { passive: true });
 
-    // Mousemove for tooltip
     svgWrap.addEventListener("mousemove", e => {
       if (tooltip && !tooltip.hidden && !mapIsDragging) {
         positionMapTooltip(e);
@@ -1072,7 +1064,6 @@ async function initMarylandMap() {
     });
   }
 
-  // Initial update
   applyMapViewBox();
   updateMarylandMap();
 }
@@ -1087,14 +1078,13 @@ function showMapTooltip(fips, mouseEvent, fallbackX, fallbackY) {
   const metricDef = MAP_METRICS[currentMapMetric] || MAP_METRICS.burden_percent;
   const val = metricDef.getValue(row);
 
-  // Compute statewide rank for this metric
   const latestYear = Math.max(...data.metadata.years);
   const latestRows = data.rows.filter(r => r.year === latestYear);
   const rowsWithVal = latestRows
     .map(r => ({ id: r.id, v: metricDef.getValue(r) }))
     .filter(item => item.v !== null && Number.isFinite(item.v));
 
-  rowsWithVal.sort((a, b) => metricDef.higherIsBurden ? b.v - a.v : b.v - a.v);
+  rowsWithVal.sort((a, b) => b.v - a.v);
   const rank = rowsWithVal.findIndex(item => item.id === fips) + 1;
 
   $("tipCountyName").textContent = row.name;
@@ -1138,21 +1128,16 @@ function applyTooltipPosition(x, y) {
   const tipW = tooltip.offsetWidth || 230;
   const tipH = tooltip.offsetHeight || 115;
 
-  // Horizontal clamping: keep at least 10px inside the container boundaries
   let targetLeft = x - tipW / 2;
   const minLeft = 10;
   const maxLeft = Math.max(minLeft, wrapRect.width - tipW - 10);
   if (targetLeft < minLeft) targetLeft = minLeft;
   if (targetLeft > maxLeft) targetLeft = maxLeft;
 
-  // Vertical placement:
-  // When hovering near top corners or edges (e.g. Garrett, Allegany, Washington, Carroll, Cecil),
-  // there isn't enough space above the cursor without clipping, so flip cleanly downwards below cursor.
   let targetTop = y - tipH - 14;
   if (targetTop < 8) {
-    targetTop = y + 20; // flip cleanly below the cursor
+    targetTop = y + 20;
   }
-  // Guard against bottom edge spillover
   if (targetTop + tipH > wrapRect.height - 8) {
     targetTop = Math.max(8, wrapRect.height - tipH - 8);
   }
@@ -1186,7 +1171,6 @@ function updateMarylandMap() {
   const latestRows = data.rows.filter(r => r.year === latestYear);
   const selectedCountyId = $("county").value;
 
-  // Collect valid values
   const values = [];
   const countyValMap = {};
 
@@ -1206,7 +1190,6 @@ function updateMarylandMap() {
   const midVal = sortedVals[Math.floor(sortedVals.length / 2)];
   const avgVal = values.reduce((sum, v) => sum + v, 0) / values.length;
 
-  // Update County Paths Fill and ARIA
   Object.keys(mapPathsData).forEach(fips => {
     const path = $(`mapCounty_${fips}`);
     if (!path) return;
@@ -1237,13 +1220,11 @@ function updateMarylandMap() {
     );
   });
 
-  // Update Selected Badge in Header
   const selectedRow = latestRowFor(selectedCountyId);
   if (selectedRow) {
     $("mapSelectedBadgeName").textContent = selectedRow.name;
   }
 
-  // Update Selection Marker in SVG
   const selectionGroup = $("mapSelectionGroup");
   if (selectionGroup) {
     while (selectionGroup.firstChild) selectionGroup.removeChild(selectionGroup.firstChild);
@@ -1272,7 +1253,6 @@ function updateMarylandMap() {
     }
   }
 
-  // Update Legend
   $("legendMetricLabel").textContent = metricDef.label;
   $("legendStateAvg").textContent = `MD State Average: ${metricDef.formatter(avgVal)}`;
 
@@ -1285,7 +1265,6 @@ function updateMarylandMap() {
   $("legendMid").textContent = `Median: ${metricDef.formatter(midVal)}`;
   $("legendMax").textContent = `Max: ${metricDef.formatter(maxVal)}`;
 
-  // Update bottom inspector
   updateMapInspector(selectedCountyId);
 }
 
@@ -1346,7 +1325,7 @@ function renderIncomeTable() {
   });
 }
 
-/* ---------- MAIN IMPROVEMENT 2: Historical Trend Cards with Distinct Measures ---------- */
+/* ---------- Historical Trend Cards ---------- */
 function renderTrendCards(history) {
   const container = $("trendCards");
   if (!container) return;
@@ -1777,14 +1756,12 @@ document.addEventListener("keydown", event => {
   if (event.key === "Escape") closeShareMenu();
 });
 
-/* Sortable table headers */
 document.querySelectorAll("#countiesTable thead th[data-sort]").forEach(th => {
   const btn = th.querySelector(".th-sort");
   if (!btn) return;
   btn.addEventListener("click", () => handleSortClick(th.dataset.sort));
 });
 
-/* Clicking table rows */
 $("counties").addEventListener("click", event => {
   const tr = event.target.closest("tr[data-county-id]");
   if (!tr) return;
@@ -1916,7 +1893,7 @@ async function start() {
       });
     }
   } catch (error) {
-    console.error("Boot error:", error);
+    console.error("Boot error: - app.js:1896", error);
     data = null;
     $("status").textContent =
       "Data failed to load. Check that data.json exists and open via a web server.";
